@@ -30,7 +30,7 @@
 
 1. **拷目录**：把仓库的 `skills/local-reddit/` 整个目录拷进你环境的自定义技能目录。
 2. **读它的 SKILL.md**：用途、工具、规则都在里面；这个技能免 Key、免登录（走 Arctic Shift 免费存档 API），所以没有取凭据这一步——需要凭据的技能（如 local-tmdb）会在这一步写明去哪取、设哪个环境变量，凭据只经安全通道注入，永不写进技能文件。
-3. **跑验证命令**：在该技能目录下执行 `bin/reddit --hot python --limit 5`。返回带真实标题的帖子 JSON＝装好了；返回错误先看 SKILL.md 的「常见坑」，仍不行如实报告，不许声称已装好。
+3. **跑验证命令**：随仓脚本经 Git 分发时**不保证带执行位**，先补一下再跑：在该技能目录下执行 `chmod +x bin/*`（多层技能包如 local-discovery-feeds 还要给子技能的 `bin/*` 一并补），然后执行 `bin/reddit --hot python --limit 5`。不想改权限时也可以用解释器显式调用（`python3 bin/reddit --hot python --limit 5`），效果相同。返回带真实标题的帖子 JSON＝装好了；返回错误先看 SKILL.md 的「常见坑」，仍不行如实报告，不许声称已装好。
 4. **告诉你的 Muse 怎么用**：把该技能的 SKILL.md 纳入它的技能索引，以后用户问到 Reddit 讨论时它会自动调用。
 5. **落档**：在核心记忆或装备清单里记一行「local-reddit 已装、验证通过（日期）」。
 
