@@ -10,7 +10,9 @@
 import ipaddress
 import json
 import re
+import socket
 import sys
+import urllib.error
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
@@ -54,7 +56,8 @@ def http_get(url):
 
 def safe_remote_url(url):
     """字幕 URL 来自第三方实例的返回值，不能盲信：只放行公网 http(s)，
-    拒绝本地/内网地址，防 SSRF 与本地文件读取。"""
+    字面内网直接拒，域名解析结果里出现内网地址也拒——挡字面内网、
+    DNS 直指内网与本地文件读取（解析校验的细则见下方注释）。"""
     u = urllib.parse.urlparse(url or "")
     if u.scheme not in ("http", "https"):
         return False
@@ -62,10 +65,42 @@ def safe_remote_url(url):
     if not host or host == "localhost" or host.endswith(".local"):
         return False
     try:
-        ip = ipaddress.ip_address(host)
-        return ip.is_global
+        return ipaddress.ip_address(host).is_global
     except ValueError:
-        return True  # 普通域名，放行（不做 DNS 解析，避免慢与误杀）
+        pass  # 普通域名，往下做解析校验
+    # 解析结果里出现内网地址才拒绝。不能要求「全部 is_global」：代理的
+    # fake-IP DNS 会把公网域名解析成 198.18/15 等保留段假地址，全量校验
+    # 会误杀所有正常站点。解析失败时放行（后续抓取自己会失败）。
+    # DNS 重绑定（解析与连接两次答案不同）不在这一层防，靠出站代理兜底。
+    internal_nets = [ipaddress.ip_network(n) for n in
+                     ("10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16")]
+    try:
+        infos = socket.getaddrinfo(host, None)
+    except Exception:
+        return True
+    for info in infos:
+        ip = ipaddress.ip_address(info[4][0])
+        if (ip.is_loopback or ip.is_link_local or ip.is_unspecified
+                or ip.is_multicast or any(ip in net for net in internal_nets)):
+            return False
+    return True
+
+
+class CheckedRedirect(urllib.request.HTTPRedirectHandler):
+    """字幕抓取的每一跳重定向都重新过 safe_remote_url，跳内网直接断。"""
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        if not safe_remote_url(newurl):
+            raise urllib.error.URLError(f"重定向越界被拒：{newurl}")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+_CHECKED_OPENER = urllib.request.build_opener(CheckedRedirect)
+
+
+def http_get_checked(url):
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    with _CHECKED_OPENER.open(req, timeout=TIMEOUT) as r:
+        return r.read()
 
 
 def pick_subtitle(subtitles, lang_pref):
@@ -128,7 +163,7 @@ def fetch_transcript(video_id, lang_pref=None):
             last_err = f"{inst}: subtitle URL 不在放行范围"
             continue
         try:
-            xml_bytes = http_get(track["url"])
+            xml_bytes = http_get_checked(track["url"])
         except Exception as e:
             last_err = f"{inst}: subtitle fetch failed: {e}"
             continue

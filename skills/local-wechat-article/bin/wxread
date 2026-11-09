@@ -39,16 +39,46 @@ def validate_url(url):
 
 
 def fetch(url):
-    """返回 (正文, 错误)。curl 退出码非 0 时如实报错，不把空响应
-    误标成验证墙（旧版忽略退出码、空响应与被墙无法区分）。"""
-    out = subprocess.run(
-        ["curl", "-s", "-L", "--max-redirs", "5",
-         "--proto", "=http,https", "--proto-redir", "=http,https",
-         "--max-time", "45", "-A", UA, url],
-        capture_output=True)
-    if out.returncode != 0:
-        return "", f"curl 退出码 {out.returncode}"
-    return out.stdout.decode("utf-8", "ignore"), ""
+    """返回 (正文, 错误)。手动跟重定向：每一跳都重新过 validate_url，
+    只许留在 mp.weixin.qq.com——curl 的 --proto-redir 只管协议、管不住
+    跨主机跳转。curl 退出码非 0 时如实报错，不把空响应误标成验证墙。"""
+    current = url
+    for _ in range(6):
+        out = subprocess.run(
+            ["curl", "-s", "-i", "--max-time", "45", "-A", UA, current],
+            capture_output=True)
+        if out.returncode != 0:
+            return "", f"curl 退出码 {out.returncode}"
+        raw = out.stdout
+        while True:  # 跳过 1xx 中间响应头
+            head, sep, body = raw.partition(b"\r\n\r\n")
+            if not sep:
+                head, sep, body = raw.partition(b"\n\n")
+            if not sep:
+                return "", "响应无头部分隔"
+            lines = head.decode("utf-8", "ignore").splitlines()
+            parts = lines[0].split() if lines else []
+            status = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 0
+            if 100 <= status < 200:
+                raw = body
+                continue
+            break
+        if status in (301, 302, 303, 307, 308):
+            loc = ""
+            for ln in lines[1:]:
+                if ln.lower().startswith("location:"):
+                    loc = ln.split(":", 1)[1].strip()
+                    break
+            if not loc:
+                return "", f"重定向无 Location（HTTP {status}）"
+            nxt = urllib.parse.urljoin(current, loc)
+            bad = validate_url(nxt)
+            if bad:
+                return "", f"重定向越界被拒：{bad}"
+            current = nxt
+            continue
+        return body.decode("utf-8", "ignore"), ""
+    return "", "重定向次数过多"
 
 
 def grab(raw, pats):
@@ -186,8 +216,16 @@ def main():
     if save_path:
         doc = header + extract_body_md(raw) + "\n"
         os.makedirs(os.path.dirname(os.path.abspath(save_path)), exist_ok=True)
-        with open(save_path, "w", encoding="utf-8") as f:
-            f.write(doc)
+        # 独占创建（"x"）：检查与写入是同一个动作，没有「先查再写」的竞争窗口；
+        # 只有显式 --force 才走覆盖写。
+        mode = "w" if "--force" in argv else "x"
+        try:
+            with open(save_path, mode, encoding="utf-8") as f:
+                f.write(doc)
+        except FileExistsError:
+            print("SAVE_REFUSED: 目标文件已存在，不覆盖；确需覆盖加 --force",
+                  file=sys.stderr)
+            return 2
         print("saved: " + save_path + f" ({len(doc)} chars)", file=sys.stderr)
     print(md)
     return 0

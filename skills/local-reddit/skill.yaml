@@ -1,4 +1,4 @@
 name: local_reddit
 title: Reddit 查询（Arctic Shift 存档）
-description: Reddit 数据查询：子版块热榜、关键词搜帖（经 Arctic Shift 免费存档 API，免 Key）。
+description: Reddit 数据查询：子版块最新帖、关键词搜帖（经 Arctic Shift 免费存档 API，免 Key）。
 include_in_prompt: true

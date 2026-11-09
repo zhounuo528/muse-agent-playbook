@@ -69,7 +69,7 @@ def main():
     else:
         d = get("eventspastleague.php", {"id": a.lastleague})
         out = [fmt_event(e) for e in (d.get("events") or [])[:15]]
-    print(json.dumps(out, ensure_ascii=False, indent=1)[:8000])
+    print(json.dumps(out, ensure_ascii=False, indent=1))
 
 
 if __name__ == "__main__":

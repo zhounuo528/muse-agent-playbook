@@ -22,6 +22,10 @@ import time
 import urllib.parse
 from datetime import datetime, timedelta, timezone
 
+import socket
+import urllib.request
+import urllib.error
+
 import feedparser
 
 SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -63,6 +67,56 @@ def valid_feed_url(url):
         return True
 
 
+_INTERNAL_NETS = [ipaddress.ip_network(n) for n in
+                  ("10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16")]
+
+
+def _is_internal(ip):
+    return (ip.is_loopback or ip.is_link_local or ip.is_unspecified
+            or ip.is_multicast
+            or any(ip in net for net in _INTERNAL_NETS))
+
+
+def host_resolves_public(host):
+    """域名解析结果里只要出现内网地址就拒绝——挡 DNS 直指内网与重定向跳内网。
+    注意别用「必须全部 is_global」：代理的 fake-IP DNS 会把公网域名解析成
+    198.18/15 等保留段假地址，全量公网校验会把正常站点误杀光。解析失败时
+    放行（后续抓取自己会失败，无可达性即无风险）。解析与连接之间换答案的
+    DNS 重绑定不在这一层防，靠出站代理/防火墙兜底，文档里如实标注。"""
+    try:
+        infos = socket.getaddrinfo(host, None)
+    except Exception:
+        return True
+    return not any(_is_internal(ipaddress.ip_address(info[4][0]))
+                   for info in infos)
+
+
+def hop_ok(url):
+    return valid_feed_url(url) and \
+        host_resolves_public((urllib.parse.urlparse(url).hostname or "").lower())
+
+
+class CheckedRedirect(urllib.request.HTTPRedirectHandler):
+    """每一跳重定向都重新过边界检查，跳内网/本地直接断。"""
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        if not hop_ok(newurl):
+            raise urllib.error.URLError(f"重定向越界被拒：{newurl}")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+_OPENER = urllib.request.build_opener(CheckedRedirect)
+
+
+def fetch_bytes(url):
+    """受控抓取：先验入口、再逐跳验重定向，拿到字节才交给 feedparser，
+    不让解析器自己满网跑。"""
+    if not hop_ok(url):
+        raise ValueError("地址不在放行范围（只许解析到公网的 http/https）")
+    req = urllib.request.Request(url, headers={"User-Agent": "playbook-feeds/1.0"})
+    with _OPENER.open(req, timeout=20) as resp:
+        return resp.read()
+
+
 def load_feeds():
     if os.path.exists(CONFIG):
         with open(CONFIG, encoding="utf-8") as f:
@@ -71,11 +125,19 @@ def load_feeds():
 
 
 def save_feeds(feeds):
-    # 原子替换：先写临时文件再 rename，进程中断也不会把配置截断成半截。
-    tmp = CONFIG + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(feeds, f, ensure_ascii=False, indent=2)
-    os.replace(tmp, CONFIG)
+    # 原子替换：唯一临时文件（防并发写撞名）＋ rename，进程中断也不把配置截断成半截。
+    import tempfile
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(CONFIG), suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(feeds, f, ensure_ascii=False, indent=2)
+        os.replace(tmp, CONFIG)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
 
 
 def entry_time(entry):
@@ -97,14 +159,13 @@ def fetch_all(days=3, per_feed=50):
                            "error": "订阅地址不在放行范围（只许公网 http/https）"})
             continue
         try:
-            d = feedparser.parse(feed["url"], agent="playbook-feeds/1.0")
+            raw = fetch_bytes(feed["url"])
+            d = feedparser.parse(raw)
             if d.bozo and not d.entries:
-                # 容错：抓原文，清掉非法 XML 字符与裸 & 后重解析（36氪等源的 feed 本身不合规）
+                # 容错：清掉非法 XML 字符与裸 & 后重解析（36氪等源的 feed 本身不合规）
                 try:
                     import re as _re
-                    import urllib.request as _u
-                    _req = _u.Request(feed["url"], headers={"User-Agent": "playbook-feeds/1.0"})
-                    _raw = _u.urlopen(_req, timeout=20).read().decode("utf-8", "replace")
+                    _raw = raw.decode("utf-8", "replace")
                     _raw = _re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", "", _raw)
                     _raw = _re.sub(r"&(?!(amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)", "&amp;", _raw)
                     d = feedparser.parse(_raw)

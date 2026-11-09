@@ -66,7 +66,7 @@
 |---|---|---|---|---|
 | local-railway-12306 | 查火车/高铁车次、余票和票价，规划出行先看它 | 免 Key（需另装开源 12306 MCP 服务） | 只读查询，不下单、不碰钱 | 常坐火车就装 |
 | local-tmdb | 查电影剧集的资料、评分和本周热门 | 免费 Key，官网自取 | 只读 | 爱看影视就装 |
-| local-reddit | 看 Reddit 子版块热榜、按关键词搜帖 | 免 Key | 只读（走公开存档，数据可能滞后） | 不逛 Reddit 就跳过 |
+| local-reddit | 看 Reddit 子版块最新帖、按关键词搜帖 | 免 Key | 只读（走公开存档，数据可能滞后） | 不逛 Reddit 就跳过 |
 | local-youtube | 抓 YouTube 视频字幕文本，拿来做摘要 | 免 Key | 只读 | 常看长视频就装 |
 | local-steam | 查 Steam 游戏详情、国区价格和在线人数 | 免 Key | 只读 | 玩 Steam 就装 |
 | local-thesportsdb | 查球队赛程和近期比分 | 免 Key（官方公开测试值） | 只读 | 看球才装 |

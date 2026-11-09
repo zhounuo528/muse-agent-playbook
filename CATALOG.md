@@ -185,9 +185,9 @@
 
 | 技能 | 用途 | 安装要点 | 验证动作 |
 |---|---|---|---|
-| local-railway-12306 | 查火车车次、余票、票价、经停与中转（国内铁路权威口径，旅行搜索的火车票一律以它为准） | 需先装开源 MCP 服务 Joooook/12306-mcp（见技能内「前置依赖」三步），再拷本技能 | `bin/query-12306 get-current-date '{}'` 返回当天日期 |
+| local-railway-12306 | 查火车车次、余票、票价、经停与中转（国内铁路权威口径，旅行搜索的火车票一律以它为准） | 需先装开源 MCP 服务 Joooook/12306-mcp（见技能内「前置依赖」三步），再拷本技能 | `bin/query-12306 get-tickets '{"date":"<明天日期>","fromStation":"深圳","toStation":"广州"}'` 返回真实车次与余票（只查日期不算验收，须打到余票链路） |
 | local-tmdb | TMDB 影视：搜电影/剧集、查详情、本周热门 | 免费凭据二选一：环境变量 `TMDB_READ_TOKEN`（v4）或 `TMDB_API_KEY`（v3），取法见技能内步骤 | `bin/tmdb --trending movie` 返回真实影片 |
-| local-reddit | Reddit 子版块热榜与版内搜帖（经 Arctic Shift 免费存档，免 Key） | 拷过去即用，Python 标准库 | `bin/reddit --hot python --limit 5` 返回真实帖子 |
+| local-reddit | Reddit 子版块最新帖与版内搜帖（经 Arctic Shift 免费存档，免 Key；存档按时间倒序，非热度榜） | 拷过去即用，Python 标准库 | `bin/reddit --hot python --limit 5` 返回真实帖子 |
 | local-youtube | 抓 YouTube 字幕文本做摘要（经 Piped 中转，中英轨道可选） | 拷过去即用，Python 标准库 | `bin/yt <任一有字幕的视频ID>` 返回 transcript |
 | local-steam | Steam 公开接口（免 Key）：搜索、新闻、在线人数、商店详情与区价 | 拷过去即用；愿望单监控只附模式说明（见技能内） | `bin/steam --search "Baldur"` 返回真实条目 |
 | local-thesportsdb | 免费体育数据：球队、赛程、比分 | 拷过去即用（官方公开测试 key，非个人凭据） | `bin/sportsdb --team Liverpool` 返回球队信息 |
