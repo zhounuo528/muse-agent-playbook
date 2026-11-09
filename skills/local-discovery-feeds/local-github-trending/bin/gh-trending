@@ -120,15 +120,24 @@ def main():
     except Exception as ex:
         print(json.dumps({"repos": [], "error": str(ex)[:200]},
                          ensure_ascii=False, indent=1))
-        return
+        sys.exit(1)
 
     p = TrendingParser()
     p.feed(html)
+    if not p.repos:
+        # 页面拿到了却一条都解析不出来：多半是 GitHub 改了页面结构
+        # （选择器失配），不是「今天没有热门仓库」。显式报错并以非零退出，
+        # 不把故障伪装成空榜。也不再对 JSON 输出做字符串截断（会切出坏 JSON）。
+        print(json.dumps({"repos": [], "count": 0,
+                          "error": "parse_empty：页面结构可能已变，选择器需更新",
+                          "lang": a.lang or "all", "since": a.since},
+                         ensure_ascii=False, indent=1))
+        sys.exit(1)
     print(json.dumps({"repos": p.repos,
                       "count": len(p.repos),
                       "lang": a.lang or "all",
                       "since": a.since},
-                     ensure_ascii=False, indent=1)[:20000])
+                     ensure_ascii=False, indent=1))
 
 
 if __name__ == "__main__":

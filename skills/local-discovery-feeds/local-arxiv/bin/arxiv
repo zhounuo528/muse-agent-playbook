@@ -27,7 +27,7 @@ def fetch(category, max_results):
         "sortBy": "submittedDate",
         "sortOrder": "descending",
     })
-    url = "http://export.arxiv.org/api/query?" + q
+    url = "https://export.arxiv.org/api/query?" + q
     req = urllib.request.Request(url, headers=UA, method="GET")
     with urllib.request.urlopen(req, timeout=30) as resp:
         return resp.read().decode("utf-8")
@@ -87,8 +87,9 @@ def main():
             errors.append({"category": cat, "error": str(ex)[:200]})
 
     papers.sort(key=lambda p: p["published"], reverse=True)
+    # 不做字符串截断（会切出坏 JSON）；限量靠条目数。
     print(json.dumps({"papers": papers[: a.max * 2], "errors": errors},
-                     ensure_ascii=False, indent=1)[:30000])
+                     ensure_ascii=False, indent=1))
 
 
 if __name__ == "__main__":

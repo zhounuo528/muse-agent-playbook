@@ -20,16 +20,34 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SERVER = process.env.MCP_12306_PATH
   || path.resolve(HERE, '../../../mcp-servers/12306-mcp/build/index.js');
 
+// 只放行 references/tools.md 里登记过的只读查询工具：旧版任意工具名
+// 透传，服务端将来新增写操作工具也会被顺手暴露，必须在包装层收敛。
+const ALLOWED_TOOLS = new Set([
+  'get-current-date',
+  'get-station-code-by-names',
+  'get-station-code-of-citys',
+  'get-station-by-telecode',
+  'get-stations-code-in-city',
+  'get-tickets',
+  'get-interline-tickets',
+  'get-train-route-stations',
+]);
+
 const args = process.argv.slice(2);
 if (args[0] === '--list' || args[0] === '-l') {
   await run('tools/list', {});
-  process.exit(0);
+  // 旧版这里强制 exit(0)，把失败也报成成功；改从 run 的结果走。
+  process.exit(process.exitCode || 0);
 }
 if (args.length < 1) {
   console.error('Usage: query-12306 <tool-name> \'<json-args>\'');
   process.exit(2);
 }
 const toolName = args[0];
+if (!ALLOWED_TOOLS.has(toolName)) {
+  console.error('Refused: tool not in allowlist:', toolName);
+  process.exit(2);
+}
 let toolArgs = {};
 try {
   toolArgs = args[1] ? JSON.parse(args[1]) : {};
@@ -41,7 +59,12 @@ try {
 await run('tools/call', { name: toolName, arguments: toolArgs });
 
 async function run(method, params) {
-  const server = spawn('node', [SERVER], { stdio: ['pipe', 'pipe', 'inherit'] });
+  // 子进程只给最小环境，不继承父进程的全部变量（里面可能有凭据）。
+  const childEnv = {};
+  for (const k of ['PATH', 'HOME', 'TMPDIR', 'LANG', 'LC_ALL', 'SystemRoot']) {
+    if (process.env[k]) childEnv[k] = process.env[k];
+  }
+  const server = spawn('node', [SERVER], { stdio: ['pipe', 'pipe', 'inherit'], env: childEnv });
   let buf = '';
   let id = 0;
   const pending = new Map();
@@ -81,9 +104,18 @@ async function run(method, params) {
       console.error('MCP error:', JSON.stringify(res.error));
       process.exitCode = 1;
     } else if (method === 'tools/call') {
-      for (const c of res.result.content || []) {
-        if (c.type === 'text') process.stdout.write(c.text + '\n');
-        else process.stdout.write(JSON.stringify(c) + '\n');
+      // MCP 的工具级失败不走 res.error，而是 result.isError：旧版忽略它，
+      // 把服务端的报错文本当正常结果输出，调用方无从分辨成败。
+      if (res.result && res.result.isError) {
+        for (const c of res.result.content || []) {
+          if (c.type === 'text') console.error(c.text);
+        }
+        process.exitCode = 1;
+      } else {
+        for (const c of res.result.content || []) {
+          if (c.type === 'text') process.stdout.write(c.text + '\n');
+          else process.stdout.write(JSON.stringify(c) + '\n');
+        }
       }
     } else {
       console.log(JSON.stringify(res.result, null, 2));

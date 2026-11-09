@@ -18,17 +18,37 @@ If markdownify is unavailable the tool
 falls back to the plain-text body and says so on stderr.
 """
 import sys, os, re, html, json, subprocess, datetime
+import urllib.parse
 
 UA = ("Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) "
       "AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 "
       "MicroMessenger/8.0.49(0x18003122) NetType/WIFI Language/zh_CN")
 
+ALLOWED_HOST = "mp.weixin.qq.com"
+
+
+def validate_url(url):
+    """只许抓公众号域名本身：拒绝其他域名、本地路径与非 http(s) 协议，
+    免得调用方（或被注入的文本）把抓取器当成任意 URL/本地文件读取器。"""
+    u = urllib.parse.urlparse(url)
+    if u.scheme not in ("http", "https"):
+        return "只支持 http/https 链接"
+    if (u.hostname or "").lower() != ALLOWED_HOST:
+        return f"只支持 {ALLOWED_HOST} 的文章链接"
+    return ""
+
 
 def fetch(url):
+    """返回 (正文, 错误)。curl 退出码非 0 时如实报错，不把空响应
+    误标成验证墙（旧版忽略退出码、空响应与被墙无法区分）。"""
     out = subprocess.run(
-        ["curl", "-s", "-L", "--max-time", "45", "-A", UA, url],
+        ["curl", "-s", "-L", "--max-redirs", "5",
+         "--proto", "=http,https", "--proto-redir", "=http,https",
+         "--max-time", "45", "-A", UA, url],
         capture_output=True)
-    return out.stdout.decode("utf-8", "ignore")
+    if out.returncode != 0:
+        return "", f"curl 退出码 {out.returncode}"
+    return out.stdout.decode("utf-8", "ignore"), ""
 
 
 def grab(raw, pats):
@@ -121,7 +141,18 @@ def main():
         print("usage: wxread <mp.weixin.qq.com url> [--json] [--save path.md]",
               file=sys.stderr)
         return 2
-    raw = fetch(args[0])
+    bad = validate_url(args[0])
+    if bad:
+        print("BAD_URL: " + bad, file=sys.stderr)
+        return 2
+    if save_path and os.path.exists(save_path) and "--force" not in argv:
+        print("SAVE_REFUSED: 目标文件已存在，不覆盖；确需覆盖加 --force",
+              file=sys.stderr)
+        return 2
+    raw, ferr = fetch(args[0])
+    if ferr:
+        print("FETCH_FAILED: " + ferr, file=sys.stderr)
+        return 1
     if not raw or ('id="js_content"' not in raw and "环境异常" in raw):
         print("FETCH_BLOCKED: WeChat served a verification page, no article body",
               file=sys.stderr)

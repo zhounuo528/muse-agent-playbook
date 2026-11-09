@@ -37,7 +37,8 @@ def fmt_post(p):
 def main():
     ap = argparse.ArgumentParser(description="Reddit 查询 (Arctic Shift)")
     g = ap.add_mutually_exclusive_group(required=True)
-    g.add_argument("--hot", metavar="SUBREDDIT", help="子版块最新帖")
+    g.add_argument("--hot", metavar="SUBREDDIT",
+                   help="子版块最新帖（按发布时间倒序，不是热度榜；--hot 是沿用名）")
     g.add_argument("--search", metavar="QUERY", help="搜帖子")
     ap.add_argument("--sub", default="", help="限定子版块")
     ap.add_argument("--limit", type=int, default=10)
@@ -62,8 +63,9 @@ def main():
         posts = [p for p in posts
                  if keyword in (p.get("title") or "").lower()
                  or keyword in (p.get("selftext") or "").lower()]
+    # 不做字符串截断（会切出坏 JSON）；限量靠 --limit 的条数。
     print(json.dumps([fmt_post(p) for p in posts[:a.limit]],
-                     ensure_ascii=False, indent=1)[:8000])
+                     ensure_ascii=False, indent=1))
 
 
 if __name__ == "__main__":

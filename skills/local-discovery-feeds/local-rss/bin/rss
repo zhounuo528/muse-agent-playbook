@@ -17,7 +17,9 @@ import sys
 import os
 import json
 import argparse
+import ipaddress
 import time
+import urllib.parse
 from datetime import datetime, timedelta, timezone
 
 import feedparser
@@ -46,6 +48,21 @@ INTERESTS = {
 }
 
 
+def valid_feed_url(url):
+    """订阅地址只放行公网 http(s)：feedparser 拿到本地路径会直接读文件，
+    配置文件又是用户可写的，入口必须先设边界。"""
+    u = urllib.parse.urlparse(url or "")
+    if u.scheme not in ("http", "https"):
+        return False
+    host = (u.hostname or "").lower()
+    if not host or host == "localhost" or host.endswith(".local"):
+        return False
+    try:
+        return ipaddress.ip_address(host).is_global
+    except ValueError:
+        return True
+
+
 def load_feeds():
     if os.path.exists(CONFIG):
         with open(CONFIG, encoding="utf-8") as f:
@@ -54,8 +71,11 @@ def load_feeds():
 
 
 def save_feeds(feeds):
-    with open(CONFIG, "w", encoding="utf-8") as f:
+    # 原子替换：先写临时文件再 rename，进程中断也不会把配置截断成半截。
+    tmp = CONFIG + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
         json.dump(feeds, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, CONFIG)
 
 
 def entry_time(entry):
@@ -72,6 +92,10 @@ def fetch_all(days=3, per_feed=50):
     entries = []
     errors = []
     for feed in feeds:
+        if not valid_feed_url(feed.get("url")):
+            errors.append({"feed": feed.get("name", "?"),
+                           "error": "订阅地址不在放行范围（只许公网 http/https）"})
+            continue
         try:
             d = feedparser.parse(feed["url"], agent="playbook-feeds/1.0")
             if d.bozo and not d.entries:
@@ -144,6 +168,9 @@ def main():
         return
 
     if args.add:
+        if not valid_feed_url(args.add):
+            print("拒绝添加：只许公网 http/https 订阅地址。")
+            return
         feeds = load_feeds()
         if any(f["url"] == args.add for f in feeds):
             print("已存在，未重复添加。")

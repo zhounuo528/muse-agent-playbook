@@ -7,9 +7,11 @@
     yt VIDEO_ID --lang zh        # 优先中文
 输出 JSON: {video_id, title, language, language_code, transcript, error}
 """
+import ipaddress
 import json
 import re
 import sys
+import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 
@@ -48,6 +50,22 @@ def http_get(url):
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
     with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
         return r.read()
+
+
+def safe_remote_url(url):
+    """字幕 URL 来自第三方实例的返回值，不能盲信：只放行公网 http(s)，
+    拒绝本地/内网地址，防 SSRF 与本地文件读取。"""
+    u = urllib.parse.urlparse(url or "")
+    if u.scheme not in ("http", "https"):
+        return False
+    host = (u.hostname or "").lower()
+    if not host or host == "localhost" or host.endswith(".local"):
+        return False
+    try:
+        ip = ipaddress.ip_address(host)
+        return ip.is_global
+    except ValueError:
+        return True  # 普通域名，放行（不做 DNS 解析，避免慢与误杀）
 
 
 def pick_subtitle(subtitles, lang_pref):
@@ -106,6 +124,9 @@ def fetch_transcript(video_id, lang_pref=None):
                     "error": "no_captions",
                     "error_detail": "该视频没有可用字幕"}
         track = pick_subtitle(subtitles, lang_pref)
+        if not safe_remote_url(track.get("url")):
+            last_err = f"{inst}: subtitle URL 不在放行范围"
+            continue
         try:
             xml_bytes = http_get(track["url"])
         except Exception as e:
@@ -142,7 +163,11 @@ def main():
                           "error_detail": "无法识别视频 ID，请传入 YouTube 链接或 11 位视频 ID"},
                          ensure_ascii=False))
         sys.exit(2)
-    print(json.dumps(fetch_transcript(video_id, lang), ensure_ascii=False))
+    result = fetch_transcript(video_id, lang)
+    print(json.dumps(result, ensure_ascii=False))
+    # 失败必须用退出码说出来：调用方（含脚本编排）只看退出码时，
+    # 旧版出错仍 exit 0 会把失败伪装成成功。
+    sys.exit(1 if "error" in result else 0)
 
 
 if __name__ == "__main__":

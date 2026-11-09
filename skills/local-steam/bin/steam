@@ -58,13 +58,29 @@ def main():
                 {"appids": a.app, "cc": "cn", "l": "schinese"})
         info = (d.get(str(a.app)) or {}).get("data") or {}
         price = info.get("price_overview") or {}
+        rel = info.get("release_date") or {}
+        # 「免费」与「未发售」是两回事，分开说，别合并成一个含糊表述。
+        if price:
+            price_s = f"{price.get('final_formatted', '')}（原价{price.get('initial_formatted', '')}，-{price.get('discount_percent', 0)}%）"
+        elif info.get("is_free"):
+            price_s = "免费"
+        elif rel.get("coming_soon"):
+            price_s = "未发售"
+        else:
+            price_s = "暂无价格信息"
         out = {"appid": a.app, "name": info.get("name"),
-               "price": f"{price.get('final_formatted', '')}（原价{price.get('initial_formatted', '')}，-{price.get('discount_percent', 0)}%）" if price else "免费/未发售",
-               "release": (info.get("release_date") or {}).get("date"),
+               "price": price_s,
+               "release": rel.get("date"),
                "genres": [g.get("description") for g in info.get("genres", [])],
                "metacritic": (info.get("metacritic") or {}).get("score")}
-    print(json.dumps(out, ensure_ascii=False, indent=1)[:6000])
+    # 不做字符串截断：把 JSON 从中间切断会产出无法解析的输出，
+    # 调用方会把「故障」误读成「空结果」。要限量就在条目数上限制。
+    print(json.dumps(out, ensure_ascii=False, indent=1))
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        print(json.dumps({"error": str(e)[:200]}, ensure_ascii=False))
+        sys.exit(1)
