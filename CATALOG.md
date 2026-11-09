@@ -80,7 +80,7 @@
 
 ### A2. AI 外援与搜索——全部【配方】
 
-外脑的调度分工与敏感材料分级见 [09 号模块](09-external-brains-and-mail.md)；本节只讲各家怎么接。
+外脑的调度分工与敏感材料分级见 [09 号模块](modules/09-external-brains-and-mail.md)；本节只讲各家怎么接。
 
 **OpenAI（custom.openai）🔑**
 - 用途：批量初筛、翻译、转录、第二意见、大块头重活的外援模型池。
@@ -158,7 +158,7 @@
 
 ### A6. 助理邮箱与助理间通道【2.0 新增】
 
-模式细节见 [09 号模块](09-external-brains-and-mail.md) 第二、三、四节。
+模式细节见 [09 号模块](modules/09-external-brains-and-mail.md) 第二、三、四节。
 
 **AgentMail 助理邮箱（custom.agentmail）🔑【配方】**
 - 用途：助理自己的邮箱——注册缓冲箱（广告与推销信由助理分拣）、助理业务信箱、AI 间异步通道。
