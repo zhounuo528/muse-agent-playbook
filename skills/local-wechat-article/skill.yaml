@@ -1,0 +1,4 @@
+name: local_wechat_article
+title: 微信公众号文章读取
+description: 读微信公众号文章全文：伪装微信移动端 UA 直抓 mp.weixin.qq.com 文章页，秒出标题、公众号、作者、发布时间与正文 Markdown，无需浏览器、无需登录。
+include_in_prompt: true

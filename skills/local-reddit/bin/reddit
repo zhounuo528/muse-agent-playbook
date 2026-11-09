@@ -1,0 +1,70 @@
+#!/usr/bin/env python3
+"""Reddit 数据查询（经 Arctic Shift 免费存档 API；Reddit 官方公开 JSON 已限流/屏蔽）。
+
+  reddit --hot games --limit 10        # r/games 最新帖
+  reddit --search "python"             # 搜帖（须配合 --sub）
+  reddit --search "AI" --sub LocalLLaMA
+
+注意：存档有延迟（分钟~小时级），不适合分秒必争的直播场景；
+限流宽松但仍别高频刷。
+"""
+import sys
+import json
+import time
+import argparse
+import urllib.request
+import urllib.parse
+
+BASE = "https://arctic-shift.photon-reddit.com/api/posts/search"
+UA = {"User-Agent": "playbook-reddit/1.0"}
+
+
+def get(params):
+    url = BASE + "?" + urllib.parse.urlencode(params)
+    req = urllib.request.Request(url, headers=UA, method="GET")
+    with urllib.request.urlopen(req, timeout=25) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def fmt_post(p):
+    return {"title": p.get("title"), "sub": p.get("subreddit"),
+            "score": p.get("score"), "comments": p.get("num_comments"),
+            "url": "https://www.reddit.com" + (p.get("permalink") or ""),
+            "created": time.strftime("%Y-%m-%d %H:%M",
+                                     time.gmtime(p.get("created_utc") or 0))}
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Reddit 查询 (Arctic Shift)")
+    g = ap.add_mutually_exclusive_group(required=True)
+    g.add_argument("--hot", metavar="SUBREDDIT", help="子版块最新帖")
+    g.add_argument("--search", metavar="QUERY", help="搜帖子")
+    ap.add_argument("--sub", default="", help="限定子版块")
+    ap.add_argument("--limit", type=int, default=10)
+    a = ap.parse_args()
+
+    params = {"limit": max(a.limit * 5, 50), "sort": "desc"}
+    if a.hot:
+        params["subreddit"] = a.hot
+        keyword = None
+    else:
+        if not a.sub:
+            print(json.dumps(
+                {"ok": False,
+                 "error": "搜帖需指定子版块，如 --search \"release\" --sub selfhosted"},
+                ensure_ascii=False))
+            sys.exit(2)
+        params["subreddit"] = a.sub
+        keyword = a.search.lower()
+    d = get(params)
+    posts = d.get("data") or []
+    if keyword:
+        posts = [p for p in posts
+                 if keyword in (p.get("title") or "").lower()
+                 or keyword in (p.get("selftext") or "").lower()]
+    print(json.dumps([fmt_post(p) for p in posts[:a.limit]],
+                     ensure_ascii=False, indent=1)[:8000])
+
+
+if __name__ == "__main__":
+    main()

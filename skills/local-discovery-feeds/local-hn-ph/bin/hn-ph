@@ -1,0 +1,151 @@
+#!/usr/bin/env python3
+"""Hacker News + Product Hunt 聚合：给每日精选供料。
+
+HN 走官方 Firebase API（免 key，稳定）：
+  hn-ph --hn                  # HN 首页 top 30
+  hn-ph --hn --count 15       # 取前 15
+  hn-ph --hn --filter ai      # 按兴趣关键词过滤
+
+PH 走首页 HTML 抓取（best-effort，无官方 key）：
+  hn-ph --ph                  # PH 首页推荐产品
+
+  hn-ph --all                 # 两边都要
+
+输出 JSON，方便 agent 再加工成推送文案。
+"""
+import sys
+import json
+import re
+import argparse
+import urllib.request
+import urllib.parse
+from datetime import datetime, timezone
+
+UA = {"User-Agent": "playbook-feeds/1.0"}
+HN_API = "https://hacker-news.firebaseio.com/v0"
+PH_HOME = "https://www.producthunt.com/"
+
+# 用户兴趣关键词（大小写不敏感），用于 --filter
+INTERESTS = {
+    "ai": ["ai", "llm", "gpt", "Muse", "gemini", "agent", "diffusion",
+           "transformer", "inference", "rag", "embedding", "openai",
+           "anthropic", "machine learning", "neural"],
+    "gaming": ["game", "gaming", "steam", "unity", "unreal", "godot",
+               "nintendo", "playstation", "xbox", "indie game", "roguelike",
+               "rpg", "fps", "esports"],
+    "devtools": ["github", "git", "vscode", "terminal", "cli", "api",
+                 "open source", "rust", "python", "typescript", "docker",
+                 "kubernetes", "database", "framework", "sdk"],
+    "tech": ["apple", "google", "meta", "tesla", "startup", "YC", "YC ",
+             "funding", "launch", "iphone", "mac", "vision pro"],
+}
+
+
+def http_get(url, timeout=20):
+    req = urllib.request.Request(url, headers=UA, method="GET")
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return resp.read()
+
+
+def hn_item(item_id):
+    raw = http_get(f"{HN_API}/item/{item_id}.json")
+    return json.loads(raw.decode("utf-8"))
+
+
+def fetch_hn(count=30):
+    raw = http_get(f"{HN_API}/topstories.json")
+    ids = json.loads(raw.decode("utf-8"))[:count]
+    stories = []
+    for i in ids:
+        try:
+            it = hn_item(i)
+        except Exception:
+            continue
+        if not it or it.get("type") != "story":
+            continue
+        stories.append({
+            "source": "hackernews",
+            "title": it.get("title", ""),
+            "url": it.get("url") or f"https://news.ycombinator.com/item?id={it['id']}",
+            "hn_url": f"https://news.ycombinator.com/item?id={it['id']}",
+            "score": it.get("score", 0),
+            "comments": it.get("descendants", 0),
+            "by": it.get("by", ""),
+            "time": datetime.fromtimestamp(it.get("time", 0), tz=timezone.utc)
+                    .astimezone().strftime("%Y-%m-%d %H:%M"),
+        })
+    return stories
+
+
+def match_interests(text, keys):
+    t = text.lower()
+    hits = []
+    for k in keys:
+        kws = INTERESTS.get(k, [k])
+        if any(w in t for w in kws):
+            hits.append(k)
+    return hits
+
+
+def fetch_ph():
+    html = http_get(PH_HOME, timeout=25).decode("utf-8", errors="replace")
+    objs = []
+    for m in re.finditer(r'\{[^{}]*"slug":"[a-z0-9\-]+"[^{}]*"tagline"[^{}]*\}', html):
+        try:
+            o = json.loads(m.group(0).encode().decode("unicode_escape"))
+            if o.get("slug") and o.get("name"):
+                objs.append(o)
+        except Exception:
+            pass
+    seen = {}
+    for o in objs:
+        slug = o["slug"]
+        if slug not in seen:
+            seen[slug] = {
+                "source": "producthunt",
+                "title": o.get("name", ""),
+                "tagline": o.get("tagline", ""),
+                "url": f"https://www.producthunt.com/products/{slug}",
+                "topics": o.get("topics", {}).get("edges", []) if isinstance(o.get("topics"), dict) else [],
+            }
+    return list(seen.values())
+
+
+def main():
+    ap = argparse.ArgumentParser(description="HN + Product Hunt 聚合")
+    ap.add_argument("--hn", action="store_true", help="只抓 HN")
+    ap.add_argument("--ph", action="store_true", help="只抓 Product Hunt")
+    ap.add_argument("--all", dest="all_", action="store_true", help="两边都抓")
+    ap.add_argument("--count", type=int, default=30, help="HN 取几条（默认 30）")
+    ap.add_argument("--filter", nargs="*", default=[],
+                    choices=list(INTERESTS.keys()),
+                    help="按兴趣过滤：ai gaming devtools tech")
+    args = ap.parse_args()
+
+    if not (args.hn or args.ph or args.all_):
+        args.all_ = True
+
+    out = {"hackernews": [], "producthunt": []}
+    if args.hn or args.all_:
+        stories = fetch_hn(args.count)
+        if args.filter:
+            stories = [s for s in stories
+                       if match_interests(s["title"], args.filter)]
+            for s in stories:
+                s["matched"] = match_interests(s["title"], args.filter)
+        out["hackernews"] = stories
+    if args.ph or args.all_:
+        prods = fetch_ph()
+        if args.filter:
+            prods = [p for p in prods
+                     if match_interests(p["title"] + " " + p.get("tagline", ""), args.filter)]
+            for p in prods:
+                p["matched"] = match_interests(p["title"] + " " + p.get("tagline", ""), args.filter)
+        out["producthunt"] = prods
+
+    json.dump(out, sys.stdout, ensure_ascii=False, indent=2)
+    sys.stdout.write("\n")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,84 @@
+#!/usr/bin/env python3
+"""TMDB 电影剧集数据库查询。
+
+鉴权（二选一，凭据只经环境变量注入，永不写进文件）：
+  TMDB_READ_TOKEN  v4 Read Access Token，走 Authorization: Bearer 头（推荐）
+  TMDB_API_KEY     v3 API Key，走 api_key query 参数
+取凭据：themoviedb.org 注册账号 → 设置 → API。免费。
+
+  tmdb --movie "复仇者联盟"      # 搜电影
+  tmdb --tv "绝命毒师"           # 搜剧集
+  tmdb --trending movie          # 本周热门电影
+  tmdb --trending tv             # 本周热门剧集
+  tmdb --detail movie 299534     # 影片详情
+"""
+import sys
+import os
+import json
+import argparse
+import urllib.request
+import urllib.parse
+
+BASE = "https://api.themoviedb.org/3"
+
+
+def get(path, params):
+    params = dict(params, language="zh-CN")
+    token = os.environ.get("TMDB_READ_TOKEN")
+    key = os.environ.get("TMDB_API_KEY")
+    headers = {}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    elif key:
+        params["api_key"] = key
+    else:
+        print(json.dumps({"ok": False, "error": "未设置 TMDB_READ_TOKEN 或 TMDB_API_KEY 环境变量"}, ensure_ascii=False))
+        sys.exit(2)
+    url = f"{BASE}{path}?{urllib.parse.urlencode(params)}"
+    req = urllib.request.Request(url, method="GET", headers=headers)
+    with urllib.request.urlopen(req, timeout=20) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def fmt_media(m):
+    return {"id": m.get("id"),
+            "title": m.get("title") or m.get("name"),
+            "date": m.get("release_date") or m.get("first_air_date"),
+            "rating": m.get("vote_average"),
+            "overview": (m.get("overview") or "")[:120]}
+
+
+def main():
+    ap = argparse.ArgumentParser(description="TMDB 查询")
+    g = ap.add_mutually_exclusive_group(required=True)
+    g.add_argument("--movie", metavar="QUERY", help="搜电影")
+    g.add_argument("--tv", metavar="QUERY", help="搜剧集")
+    g.add_argument("--trending", metavar="KIND", choices=["movie", "tv"],
+                   help="本周热门")
+    g.add_argument("--detail", nargs=2, metavar=("KIND", "ID"),
+                   help="详情，KIND=movie/tv")
+    a = ap.parse_args()
+
+    if a.movie:
+        d = get("/search/movie", {"query": a.movie})
+        out = [fmt_media(m) for m in (d.get("results") or [])[:8]]
+    elif a.tv:
+        d = get("/search/tv", {"query": a.tv})
+        out = [fmt_media(m) for m in (d.get("results") or [])[:8]]
+    elif a.trending:
+        d = get(f"/trending/{a.trending}/week", {})
+        out = [fmt_media(m) for m in (d.get("results") or [])[:10]]
+    else:
+        kind, mid = a.detail
+        d = get(f"/{kind}/{mid}", {})
+        out = {"id": d.get("id"), "title": d.get("title") or d.get("name"),
+               "date": d.get("release_date") or d.get("first_air_date"),
+               "rating": d.get("vote_average"),
+               "genres": [g.get("name") for g in d.get("genres", [])],
+               "runtime": d.get("runtime") or d.get("episode_run_time"),
+               "overview": d.get("overview")}
+    print(json.dumps(out, ensure_ascii=False, indent=1)[:6000])
+
+
+if __name__ == "__main__":
+    main()

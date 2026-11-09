@@ -1,0 +1,179 @@
+#!/usr/bin/env python3
+"""RSS 阅读器：聚合用户订阅源，给每日精选供料。
+
+  rss --list                    # 列出当前订阅源
+  rss --add "https://example.com/feed" --name "示例"   # 添加订阅源
+  rss --remove "https://example.com/feed"              # 删除订阅源
+  rss                           # 抓全部源最新条目（默认 3 天内）
+  rss --days 7                  # 取 7 天内的条目
+  rss --filter ai gaming        # 按兴趣关键词过滤
+  rss --count 50                # 每个源最多取 50 条再合并
+
+配置文件：~/workspace/custom-skills/local-rss/feeds.json
+输出 JSON：entries[] 含 feed/title/url/published/summary。
+依赖：pip install feedparser
+"""
+import sys
+import os
+import json
+import argparse
+import time
+from datetime import datetime, timedelta, timezone
+
+import feedparser
+
+SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CONFIG = os.path.join(SKILL_DIR, "feeds.json")
+
+DEFAULT_FEEDS = [
+    {"name": "Hacker News", "url": "https://news.ycombinator.com/rss"},
+    {"name": "GitHub Blog", "url": "https://github.blog/feed/"},
+    {"name": "The Verge", "url": "https://www.theverge.com/rss/index.xml"},
+]
+
+INTERESTS = {
+    "ai": ["ai", "llm", "gpt", "Muse", "gemini", "agent", "diffusion",
+           "transformer", "inference", "rag", "embedding", "openai",
+           "anthropic", "machine learning", "neural", "copilot"],
+    "gaming": ["game", "gaming", "steam", "unity", "unreal", "godot",
+               "nintendo", "playstation", "xbox", "indie game", "roguelike",
+               "rpg", "fps", "esports"],
+    "devtools": ["github", "git", "vscode", "terminal", "cli", "api",
+                 "open source", "rust", "python", "typescript", "docker",
+                 "kubernetes", "database", "framework", "sdk"],
+    "tech": ["apple", "google", "meta", "tesla", "startup",
+             "funding", "launch", "iphone", "mac"],
+}
+
+
+def load_feeds():
+    if os.path.exists(CONFIG):
+        with open(CONFIG, encoding="utf-8") as f:
+            return json.load(f)
+    return list(DEFAULT_FEEDS)
+
+
+def save_feeds(feeds):
+    with open(CONFIG, "w", encoding="utf-8") as f:
+        json.dump(feeds, f, ensure_ascii=False, indent=2)
+
+
+def entry_time(entry):
+    for key in ("published_parsed", "updated_parsed"):
+        t = entry.get(key)
+        if t:
+            return datetime(*t[:6], tzinfo=timezone.utc)
+    return None
+
+
+def fetch_all(days=3, per_feed=50):
+    feeds = load_feeds()
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    entries = []
+    errors = []
+    for feed in feeds:
+        try:
+            d = feedparser.parse(feed["url"], agent="playbook-feeds/1.0")
+            if d.bozo and not d.entries:
+                # 容错：抓原文，清掉非法 XML 字符与裸 & 后重解析（36氪等源的 feed 本身不合规）
+                try:
+                    import re as _re
+                    import urllib.request as _u
+                    _req = _u.Request(feed["url"], headers={"User-Agent": "playbook-feeds/1.0"})
+                    _raw = _u.urlopen(_req, timeout=20).read().decode("utf-8", "replace")
+                    _raw = _re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", "", _raw)
+                    _raw = _re.sub(r"&(?!(amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)", "&amp;", _raw)
+                    d = feedparser.parse(_raw)
+                except Exception:
+                    pass
+            if d.bozo and not d.entries:
+                errors.append({"feed": feed["name"], "error": str(d.bozo_exception)[:120]})
+                continue
+            for e in d.entries[:per_feed]:
+                pub = entry_time(e)
+                if pub and pub < cutoff:
+                    continue
+                entries.append({
+                    "feed": feed["name"],
+                    "title": e.get("title", "").strip(),
+                    "url": e.get("link", ""),
+                    "published": pub.astimezone().strftime("%Y-%m-%d %H:%M") if pub else "",
+                    "_ts": pub.timestamp() if pub else 0,
+                    "summary": (e.get("summary", "") or "")[:300].strip(),
+                })
+        except Exception as ex:
+            errors.append({"feed": feed["name"], "error": str(ex)[:120]})
+    # 去重（按 url）
+    seen = {}
+    for e in entries:
+        key = e["url"] or e["title"]
+        if key and key not in seen:
+            seen[key] = e
+    entries = sorted(seen.values(), key=lambda x: x["_ts"], reverse=True)
+    for e in entries:
+        e.pop("_ts", None)
+    return {"entries": entries, "errors": errors, "feed_count": len(feeds)}
+
+
+def match_interests(text, keys):
+    t = text.lower()
+    hits = []
+    for k in keys:
+        kws = INTERESTS.get(k, [k])
+        if any(w in t for w in kws):
+            hits.append(k)
+    return hits
+
+
+def main():
+    ap = argparse.ArgumentParser(description="RSS 阅读器")
+    ap.add_argument("--list", action="store_true", help="列出订阅源")
+    ap.add_argument("--add", metavar="URL", help="添加订阅源")
+    ap.add_argument("--name", default="", help="配合 --add，给源起个名")
+    ap.add_argument("--remove", metavar="URL", help="删除订阅源")
+    ap.add_argument("--days", type=int, default=3, help="取几天内的条目（默认 3）")
+    ap.add_argument("--count", type=int, default=50, help="每个源最多取几条（默认 50）")
+    ap.add_argument("--filter", nargs="*", default=[],
+                    choices=list(INTERESTS.keys()), help="按兴趣过滤")
+    args = ap.parse_args()
+
+    if args.list:
+        feeds = load_feeds()
+        for f in feeds:
+            print(f"- {f['name']}: {f['url']}")
+        return
+
+    if args.add:
+        feeds = load_feeds()
+        if any(f["url"] == args.add for f in feeds):
+            print("已存在，未重复添加。")
+            return
+        name = args.name or args.add
+        feeds.append({"name": name, "url": args.add})
+        save_feeds(feeds)
+        print(f"已添加：{name}")
+        return
+
+    if args.remove:
+        feeds = load_feeds()
+        feeds = [f for f in feeds if f["url"] != args.remove]
+        save_feeds(feeds)
+        print("已删除（如果存在）。")
+        return
+
+    out = fetch_all(days=args.days, per_feed=args.count)
+    if args.filter:
+        kept = []
+        for e in out["entries"]:
+            m = match_interests(e["title"] + " " + e["summary"], args.filter)
+            if m:
+                e["matched"] = m
+                kept.append(e)
+        out["entries"] = kept
+
+    json.dump(out, sys.stdout, ensure_ascii=False, indent=2)
+    sys.stdout.write("\n")
+
+
+if __name__ == "__main__":
+    main()

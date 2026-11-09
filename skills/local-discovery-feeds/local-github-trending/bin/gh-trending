@@ -1,0 +1,135 @@
+#!/usr/bin/env python3
+"""GitHub 每日趋势：抓取 github.com/trending 的热门仓库。
+
+用法：
+  gh-trending                     # 默认：全语言，daily
+  gh-trending --lang python       # 只看 Python
+  gh-trending --since weekly      # 按周榜（daily/weekly/monthly）
+"""
+import sys
+import json
+import argparse
+import re
+import urllib.request
+import urllib.parse
+from html.parser import HTMLParser
+
+UA = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) playbook-feeds/1.0"}
+
+
+class TrendingParser(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.repos = []
+        self.cur = None
+        self.in_article = False
+        self.capture = None  # 'name' | 'desc' | 'lang' | 'stars' | 'forks' | 'stars_today'
+        self.buf = ""
+
+    def handle_starttag(self, tag, attrs):
+        ad = dict(attrs)
+        cls = ad.get("class", "")
+        if tag == "article" and "Box-row" in cls:
+            self.in_article = True
+            self.cur = {"name": "", "description": "", "language": "",
+                        "stars": "", "forks": "", "stars_today": "", "url": ""}
+        if not self.in_article:
+            return
+        if tag == "h2" and "h3" in cls:
+            self.capture = "name"
+            self.buf = ""
+            self._name_href = ""
+        elif tag == "a" and self.capture == "name":
+            href = ad.get("href", "").strip()
+            if href and href.count("/") == 2:
+                self.cur["url"] = "https://github.com" + href
+                self._name_href = href.strip("/")
+        elif tag == "p" and "col-9" in cls:
+            self.capture = "desc"
+            self.buf = ""
+        elif tag == "span" and "d-inline-block" in cls and "ml-0" in cls:
+            self.capture = "lang"
+            self.buf = ""
+        elif tag == "a" and "Link--muted" in cls:
+            href = ad.get("href", "")
+            if href.endswith("/stargazers"):
+                self.capture = "stars"
+            elif href.endswith("/forks"):
+                self.capture = "forks"
+            else:
+                self.capture = None
+                return
+            self.buf = ""
+        elif tag == "span" and "d-inline-block" in cls and "float-sm-right" in cls:
+            self.capture = "stars_today"
+            self.buf = ""
+
+    def handle_endtag(self, tag):
+        if tag == "article" and self.in_article:
+            if self.cur and self.cur["name"]:
+                self.repos.append(self.cur)
+            self.in_article = False
+            self.cur = None
+            self.capture = None
+            return
+        if not self.in_article or not self.capture:
+            return
+        val = " ".join(self.buf.split())
+        if tag in ("h2", "p", "span", "a") and self.capture:
+            if self.capture == "name":
+                self.cur["name"] = getattr(self, "_name_href", "") or \
+                    val.replace(" / ", "/").replace(" ", "")
+            elif self.capture == "desc":
+                self.cur["description"] = val
+            elif self.capture == "lang":
+                self.cur["language"] = val
+            elif self.capture == "stars":
+                self.cur["stars"] = val
+            elif self.capture == "forks":
+                self.cur["forks"] = val
+            elif self.capture == "stars_today":
+                m = re.search(r"([\d,]+)\s+stars?\s+(today|this week|this month)", val)
+                self.cur["stars_today"] = m.group(0) if m else val
+            self.capture = None
+            self.buf = ""
+
+    def handle_data(self, data):
+        if self.capture:
+            self.buf += data
+
+
+def fetch(lang, since):
+    path = "/trending"
+    if lang:
+        path += "/" + urllib.parse.quote(lang)
+    url = "https://github.com" + path + "?" + urllib.parse.urlencode({"since": since})
+    req = urllib.request.Request(url, headers=UA, method="GET")
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        return resp.read().decode("utf-8", errors="replace")
+
+
+def main():
+    ap = argparse.ArgumentParser(description="GitHub 每日趋势")
+    ap.add_argument("--lang", default="", help="语言过滤，如 python（默认全语言）")
+    ap.add_argument("--since", default="daily",
+                    choices=["daily", "weekly", "monthly"], help="时间范围")
+    a = ap.parse_args()
+
+    try:
+        html = fetch(a.lang, a.since)
+    except Exception as ex:
+        print(json.dumps({"repos": [], "error": str(ex)[:200]},
+                         ensure_ascii=False, indent=1))
+        return
+
+    p = TrendingParser()
+    p.feed(html)
+    print(json.dumps({"repos": p.repos,
+                      "count": len(p.repos),
+                      "lang": a.lang or "all",
+                      "since": a.since},
+                     ensure_ascii=False, indent=1)[:20000])
+
+
+if __name__ == "__main__":
+    main()

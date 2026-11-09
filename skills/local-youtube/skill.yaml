@@ -1,0 +1,4 @@
+name: local_youtube
+title: YouTube 字幕抓取
+description: 抓取 YouTube 视频字幕文本（经 Piped 第三方 API），供 agent 做视频摘要；支持中英文轨道选择。
+include_in_prompt: true

@@ -1,0 +1,4 @@
+name: local_steam
+title: Steam 公开接口查询
+description: Steam 公开 Web API（免 Key）：游戏搜索、新闻、在线人数、商店详情与区价。不含用户个人数据端点。
+include_in_prompt: true

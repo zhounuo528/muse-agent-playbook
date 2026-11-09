@@ -1,0 +1,4 @@
+name: local_thesportsdb
+title: TheSportsDB 体育数据
+description: TheSportsDB 免费体育数据：球队搜索、未来赛程、近期比分（足球等），免 Key。
+include_in_prompt: true

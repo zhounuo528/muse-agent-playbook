@@ -1,0 +1,4 @@
+name: local_rss
+title: discovery feed fetcher (local-rss)
+description: 单源抓取子技能，隶属 local-discovery-feeds 聚合包，细节见其 SKILL.md 与本目录 SKILL.md。
+include_in_prompt: false

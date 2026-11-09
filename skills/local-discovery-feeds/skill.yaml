@@ -1,0 +1,4 @@
+name: local_discovery_feeds
+title: 发现源聚合
+description: 从 ArXiv、GitHub 趋势、HN 与 Product Hunt、订阅 RSS 抓取新鲜内容并去重，按用户兴趣过滤，给每日精选和好物搜罗供料。
+include_in_prompt: true

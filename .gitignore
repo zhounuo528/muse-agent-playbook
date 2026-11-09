@@ -14,3 +14,9 @@ tokens.json
 # 系统与工具杂项
 .DS_Store
 .muse-github-snapshot-sync.json
+
+# 技能包运行时杂项（2.0 新增）
+.venv/
+__pycache__/
+feeds.json
+watchlist.json

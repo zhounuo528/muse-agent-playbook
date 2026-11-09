@@ -1,0 +1,10 @@
+[
+  {
+    "name": "Hacker News",
+    "url": "https://news.ycombinator.com/rss"
+  },
+  {
+    "name": "GitHub Blog",
+    "url": "https://github.blog/feed/"
+  }
+]

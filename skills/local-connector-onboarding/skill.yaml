@@ -1,0 +1,4 @@
+name: local_connector_onboarding
+title: 连接器接入验收法
+description: Verify a new API or MCP connector end to end (docs, auth, real tool inventory, least-privilege scope, live smoke test) before claiming or denying any capability; verify with a non-destructive test before denying a capability on memory or docs alone.
+include_in_prompt: true

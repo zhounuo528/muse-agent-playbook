@@ -1,0 +1,98 @@
+#!/usr/bin/env node
+// query-12306: CLI wrapper around the 12306-mcp stdio server.
+// Usage:
+//   query-12306 <tool-name> '<json-args>'
+//   query-12306 --list
+// Examples:
+//   query-12306 get-current-date '{}'
+//   query-12306 get-station-code-by-names '{"stationNames":"深圳北|广州南"}'
+//   query-12306 get-tickets '{"date":"2026-10-15","fromStation":"深圳北","toStation":"广州南","trainFilterFlags":"G","limitedNum":5}'
+//   query-12306 get-train-route-stations '{"trainCode":"C7160","departDate":"2026-10-15"}'
+//   query-12306 get-interline-tickets '{"date":"2026-10-15","fromStation":"深圳","toStation":"北京西"}'
+import { spawn } from 'child_process';
+import { fileURLToPath } from 'url';
+import path from 'path';
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+// The MCP server itself is the open-source Joooook/12306-mcp (MIT).
+// Default: a sibling checkout at <workspace>/mcp-servers/12306-mcp.
+// Override with env MCP_12306_PATH if you installed it elsewhere.
+const SERVER = process.env.MCP_12306_PATH
+  || path.resolve(HERE, '../../../mcp-servers/12306-mcp/build/index.js');
+
+const args = process.argv.slice(2);
+if (args[0] === '--list' || args[0] === '-l') {
+  await run('tools/list', {});
+  process.exit(0);
+}
+if (args.length < 1) {
+  console.error('Usage: query-12306 <tool-name> \'<json-args>\'');
+  process.exit(2);
+}
+const toolName = args[0];
+let toolArgs = {};
+try {
+  toolArgs = args[1] ? JSON.parse(args[1]) : {};
+} catch (e) {
+  console.error('Bad JSON args:', e.message);
+  process.exit(2);
+}
+
+await run('tools/call', { name: toolName, arguments: toolArgs });
+
+async function run(method, params) {
+  const server = spawn('node', [SERVER], { stdio: ['pipe', 'pipe', 'inherit'] });
+  let buf = '';
+  let id = 0;
+  const pending = new Map();
+  server.stdout.on('data', (d) => {
+    buf += d.toString();
+    let idx;
+    while ((idx = buf.indexOf('\n')) >= 0) {
+      const line = buf.slice(0, idx).trim();
+      buf = buf.slice(idx + 1);
+      if (!line) continue;
+      try {
+        const msg = JSON.parse(line);
+        if (msg.id !== undefined && pending.has(msg.id)) {
+          pending.get(msg.id)(msg);
+          pending.delete(msg.id);
+        }
+      } catch { /* ignore non-JSON lines */ }
+    }
+  });
+
+  const send = (m, p) => new Promise((resolve, reject) => {
+    const msgId = ++id;
+    const timer = setTimeout(() => { pending.delete(msgId); reject(new Error('TIMEOUT')); }, 120000);
+    pending.set(msgId, (msg) => { clearTimeout(timer); resolve(msg); });
+    server.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: msgId, method: m, params: p }) + '\n');
+  });
+
+  try {
+    await send('initialize', {
+      protocolVersion: '2024-11-05',
+      capabilities: {},
+      clientInfo: { name: 'query-12306', version: '1.0' },
+    });
+    server.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) + '\n');
+    const res = await send(method, params);
+    if (res.error) {
+      console.error('MCP error:', JSON.stringify(res.error));
+      process.exitCode = 1;
+    } else if (method === 'tools/call') {
+      for (const c of res.result.content || []) {
+        if (c.type === 'text') process.stdout.write(c.text + '\n');
+        else process.stdout.write(JSON.stringify(c) + '\n');
+      }
+    } else {
+      console.log(JSON.stringify(res.result, null, 2));
+    }
+  } catch (e) {
+    console.error('FAILED:', e.message);
+    process.exitCode = 1;
+  } finally {
+    server.kill();
+    await new Promise((r) => setTimeout(r, 400));
+  }
+}

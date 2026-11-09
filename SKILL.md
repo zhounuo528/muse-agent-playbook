@@ -19,7 +19,10 @@ description: 个人助理操作总契约：接入新服务、心跳巡检、记�
 
 | 场景 | 读哪个文件 |
 |---|---|
-| 查某个连接器/API/技能怎么连、Key 去哪取 | `CATALOG.md`（总目录） |
+| 查某个连接器/API/技能怎么连、Key 去哪取 | `CATALOG.md`（总目录；先看开头的分级图例） |
+| 装一个【随仓附带】技能 | `skills/<技能名>/SKILL.md`（目录拷进技能目录，按其说明装） |
+| 睡眠门控的完整实现（信号文件/唤醒包/晨报防重复） | `modules/08-sleep-gate.md` |
+| 外脑派活、助理邮箱、双 Muse 专线、收件箱 | `modules/09-external-brains-and-mail.md` |
 | 选型参考：官方有、但未验证的生态清单 | `OBSERVED.md`（仅供参考，启用前必须按 01 号模块验证，不得当作已接通能力） |
 | 接一个新服务/API/MCP | `modules/01-connector-onboarding.md` |
 | 定时轻巡检（消息/邮件/日程） | `modules/02-heartbeat-inspection.md` |

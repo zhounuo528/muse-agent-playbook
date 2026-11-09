@@ -1,0 +1,4 @@
+name: local_tmdb
+title: TMDB 影视数据库
+description: TMDB 电影剧集数据库：搜电影/剧集、查详情、本周热门。凭据经环境变量 TMDB_READ_TOKEN（v4）或 TMDB_API_KEY（v3）注入。
+include_in_prompt: true

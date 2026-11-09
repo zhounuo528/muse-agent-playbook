@@ -1,0 +1,70 @@
+#!/usr/bin/env python3
+"""Steam 公开 Web API：游戏新闻、在线人数、商店详情、游戏搜索。
+
+以下公开端点无需 API key（限流注意节制）：
+  steam --search "Baldur"             # 按名搜游戏拿 appid
+  steam --news 2300160 --count 5      # 游戏新闻
+  steam --players 2300160             # 当前在线人数
+  steam --app 2300160                 # 商店详情（含国区价格）
+"""
+import sys
+import json
+import argparse
+import urllib.request
+import urllib.parse
+
+UA = {"User-Agent": "playbook-steam/1.0"}
+
+
+def get(url, params=None):
+    if params:
+        url += "?" + urllib.parse.urlencode(params)
+    req = urllib.request.Request(url, headers=UA, method="GET")
+    with urllib.request.urlopen(req, timeout=20) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Steam 公开 API 查询")
+    g = ap.add_mutually_exclusive_group(required=True)
+    g.add_argument("--search", metavar="TERM", help="按名搜游戏")
+    g.add_argument("--news", metavar="APPID", help="游戏新闻")
+    g.add_argument("--players", metavar="APPID", help="当前在线人数")
+    g.add_argument("--app", metavar="APPID", help="商店详情")
+    ap.add_argument("--count", type=int, default=5)
+    a = ap.parse_args()
+
+    if a.search:
+        d = get("https://store.steampowered.com/api/storesearch/",
+                {"term": a.search, "cc": "cn", "l": "schinese"})
+        items = d.get("items") or []
+        out = [{"appid": i.get("id"), "name": i.get("name"),
+                "price": (i.get("price") or {}).get("final"),
+                "img": i.get("tiny_image")} for i in items[:8]]
+    elif a.news:
+        d = get("https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/",
+                {"appid": a.news, "count": a.count, "maxlength": 300})
+        items = (d.get("appnews") or {}).get("newsitems") or []
+        out = [{"title": n.get("title"), "date": n.get("date"),
+                "feed": n.get("feedname"), "url": n.get("url")}
+               for n in items]
+    elif a.players:
+        d = get("https://api.steampowered.com/ISteamUserStats/GetNumberOfCurrentPlayers/v1/",
+                {"appid": a.players})
+        out = {"appid": a.players,
+               "players": (d.get("response") or {}).get("player_count")}
+    else:
+        d = get("https://store.steampowered.com/api/appdetails/",
+                {"appids": a.app, "cc": "cn", "l": "schinese"})
+        info = (d.get(str(a.app)) or {}).get("data") or {}
+        price = info.get("price_overview") or {}
+        out = {"appid": a.app, "name": info.get("name"),
+               "price": f"{price.get('final_formatted', '')}（原价{price.get('initial_formatted', '')}，-{price.get('discount_percent', 0)}%）" if price else "免费/未发售",
+               "release": (info.get("release_date") or {}).get("date"),
+               "genres": [g.get("description") for g in info.get("genres", [])],
+               "metacritic": (info.get("metacritic") or {}).get("score")}
+    print(json.dumps(out, ensure_ascii=False, indent=1)[:6000])
+
+
+if __name__ == "__main__":
+    main()
