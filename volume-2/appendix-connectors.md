@@ -9,12 +9,12 @@
 
 | 连接器 | 解锁什么 | 撑 | 凭据 | 验证 |
 |---|---|---|---|---|
-| 米家 | 她能查家里的智能设备状态，经确认才动手控制 | 卷二 2.5 位置的家庭自动化、卷四·生活 | 💻📱 扫码登录（约 30 天） | 列家庭与设备，返回真实设备名与在线状态 |
-| 瑞幸咖啡 | 查门店商品、预览订单，确认后下单出付款码 | 卷四·生活 | 🔑 官网取 MCP Token（约一月） | 带位置查门店，返回真实门店与距离 |
-| 麦当劳 | 查餐品券与积分，确认后下单 | 卷四·生活 | 📱🔑 扫码激活取 Token | 查账户返回真实积分；注意下单只到待支付、付款可能要回官方 App，下单前先讲明 |
-| 飞猪 | 搜机票/酒店/火车票/景点（只搜，下单回飞猪） | 卷二 2.7、卷四·出行 | 🔑 控制台取 Key | 同一查询：无 Key 价格打码、配 Key 出真实起价 |
-| 途牛 | 同类旅行查询，与飞猪互为替补核价 | 卷二 2.7 | 🔑 官方 MCP 凭据 | 酒店搜索返回真实列表与起价；强制只读，工具里有预订类也不启用 |
-| 滴滴出行 | 打车估价/下单/跟踪、POI、路线规划 | 卷二 2.7、2.5 | 🔑 官方 MCP 凭据 | 一次估价返回真实价格区间；下单先列明细等确认 |
+| 米家 | 她能查家里的智能设备状态，经确认才动手控制 | 卷二 2.5 位置的家庭自动化、卷四·生活 | 💻📱 社区客户端 mijiaAPI（安装：https://pypi.org/project/mijiaAPI/ ）扫码登录（约 30 天） | 列家庭与设备，返回真实设备名与在线状态 |
+| 瑞幸咖啡 | 查门店商品、预览订单，确认后下单出付款码 | 卷四·生活 | 🔑 https://open.lkcoffee.com/mcp 取 MCP Token（约一月） | 带位置查门店，返回真实门店与距离 |
+| 麦当劳 | 查餐品券与积分，确认后下单 | 卷四·生活 | 📱🔑 https://open.mcd.cn 扫码激活取 Token | 查账户返回真实积分；注意下单只到待支付、付款可能要回官方 App，下单前先讲明 |
+| 飞猪 | 搜机票/酒店/火车票/景点（只搜，下单回飞猪） | 卷二 2.7、卷四·出行 | 🔑 https://flyai.open.fliggy.com 控制台取 Key | 同一查询：无 Key 价格打码、配 Key 出真实起价 |
+| 途牛 | 同类旅行查询，与飞猪互为替补核价 | 卷二 2.7 | 🔑 https://open.tuniu.cn 开放平台取凭据 | 酒店搜索返回真实列表与起价；强制只读，工具里有预订类也不启用 |
+| 滴滴出行 | 打车估价/下单/跟踪、POI、路线规划 | 卷二 2.7、2.5 | 🔑 https://mcp.didichuxing.com 开发者控制台激活 Key | 一次估价返回真实价格区间；下单先列明细等确认 |
 
 （下线样本）淘宝桌面版 MCP：官方功能下线中——这类条目不硬装，低频巡检官方页面，等恢复再施工。教训收在 CATALOG 附「三课」。
 
@@ -26,31 +26,31 @@
 
 | 连接器 | 解锁什么 | 撑 | 凭据 | 验证 |
 |---|---|---|---|---|
-| DeepSeek Search | 带权威度与重排分的搜索＋单页抓取，是「发现」环节主力 | 卷二 2.8 三级梯子的第一级 | 🔑 开放平台取 Key（按成功请求计费） | 一次真实搜索返回带来源结果 |
-| Parallel（托管 MCP 搜索套件） | 网页搜索、难抓页面（PDF/JS 重页）批量抓取、图片搜索、带引用的结构化判断；英文网专长，国内发现仍走 DeepSeek Search | 卷二 2.8 三级梯子的并行腿 | 🆓 免费档免注册、免 Key（深度研究工具需 Key，未启用、不许当已有能力） | 一次英文搜索返回带来源结果；查询只发公开通用信息、不发敏感关键词 |
-| Typesafe（判断类） | 给巡检条目打分类/紧急度分，做影子对照与高置信预筛 | 卷三 3.2、3.4 外脑调度 | 🔑 平台取凭据 | 先影子对账：与她自己的分级逐条比对；安全类永不由分数单独决定、安全项永远人工开正文 |
+| DeepSeek Search | 带权威度与重排分的搜索＋单页抓取，是「发现」环节主力 | 卷二 2.8 三级梯子的第一级 | 🔑 https://platform.deepseek.com 取 Key（按成功请求计费） | 一次真实搜索返回带来源结果 |
+| Parallel（托管 MCP 搜索套件） | 网页搜索、难抓页面（PDF/JS 重页）批量抓取、图片搜索、带引用的结构化判断；英文网专长，国内发现仍走 DeepSeek Search | 卷二 2.8 三级梯子的并行腿 | 🆓 免费档免注册、免 Key，端点 https://mcp.parallel.ai/mcp 直连（深度研究工具需 Key，未启用、不许当已有能力） | 一次英文搜索返回带来源结果；查询只发公开通用信息、不发敏感关键词 |
+| Typesafe（判断类） | 给巡检条目打分类/紧急度分，做影子对照与高置信预筛 | 卷三 3.2、3.4 外脑调度 | 🔑 https://console.typesafe.ai 取凭据 | 先影子对账：与她自己的分级逐条比对；安全类永不由分数单独决定、安全项永远人工开正文 |
 
 ## 三、内容、数据与查询类 API——全部
 
 | 连接器 | 解锁什么 | 撑 | 凭据 |
 |---|---|---|---|
-| Steam（带 Key） | 游戏库、最近游玩、成就等用户数据 | 卷二 2.6、场景卡 8 | 🔑 免费 Key |
-| 知乎 | 开放平台内容查询 | 卷二 2.8 | 🔑 注册凭据 |
-| 天眼查 | 企业检索、工商、风险、司法、股权 | 卷四·工作（背调包） | 💻 自备服务器 CLI＋OAuth |
-| Bilibili | 热门/排行/搜索/详情/热评（匿名只读） | 卷二 2.6 | 🆓 |
-| DailyHot | 40+ 平台热榜聚合 | 卷二 2.8、场景卡 8 | 🆓 自托管开源部署 |
-| Hugging Face | 模型与数据集趋势/搜索 | 卷二 2.8（开源雷达） | 🆓 公开读 |
-| 魔搭 ModelScope | 模型/数据集/Studio 搜索（国内开源生态雷达，与 Hugging Face 互为国内外一对） | 卷二 2.8（开源雷达） | 🆓 公开读免 Key（官方 MCP 腿需注册免费 Token） |
-| OpenRouter（模型聚合网关） | 一个 Key 试遍各家模型；`:free` 免费模型零充值可用，适合批量初筛与第二意见这类「出量」的活 | 卷三 3.4 外脑调度 | 🔑 官网注册建 Key |
-| RAWG | 跨平台游戏库与评分 | 卷二 2.6 | 🔑 免费 Key |
-| OMDb | 影视查分、票房、卡司 | 卷二 2.6 | 🔑 免费 Key |
-| football-data | 联赛积分、射手、赛程比分 | 场景卡 9 观赛管家 | 🔑 免费 Key（约 10 次/分） |
-| NASA | 每日天文图、近地天体（闲聊与精选调味） | 卷二 2.6 | 🔑 免费 Key |
-| Frankfurter | 汇率与换算（ECB 参考价） | 卷四·财务（订阅审计换算） | 🆓 |
-| 快递100 | 快递轨迹、运费/时效估算 | 卷二 2.2 的物流通知呼应 | 🆓 免费额度 |
-| 高德地图 | 地理编码、POI、驾车路线 | 卷二 2.5/2.7、场景卡 4 | 🔑 Web 服务 Key |
-| 和风天气 | 实时天气与逐日/逐小时预报 | 卷一 1.3 换装信号、卷二 2.7 | 🔑 控制台 Key |
-| 今日诗词 / Cat Facts / TheCatAPI / OpenTDB | 诗词一句、猫知识猫图、trivia 题库（日常调味与约战） | 卷一的人设日常、卷四·生活 | 🆓 为主 |
+| Steam（带 Key） | 游戏库、最近游玩、成就等用户数据 | 卷二 2.6、场景卡 8 | 🔑 免费 Key：https://steamcommunity.com/dev/apikey |
+| 知乎 | 开放平台内容查询 | 卷二 2.8 | 🔑 注册凭据：https://developer.zhihu.com |
+| 天眼查 | 企业检索、工商、风险、司法、股权 | 卷四·工作（背调包） | 💻 申请：https://ai.tianyancha.com ；自备服务器 CLI＋OAuth |
+| Bilibili | 热门/排行/搜索/详情/热评（匿名只读） | 卷二 2.6 | 🆓 免申请（社区接口文档：https://github.com/SocialSisterYi/bilibili-API-collect ） |
+| DailyHot | 40+ 平台热榜聚合 | 卷二 2.8、场景卡 8 | 🆓 自托管开源部署：https://github.com/imsyy/DailyHotApi |
+| Hugging Face | 模型与数据集趋势/搜索 | 卷二 2.8（开源雷达） | 🆓 公开读（Token：https://huggingface.co/settings/tokens ） |
+| 魔搭 ModelScope | 模型/数据集/Studio 搜索（国内开源生态雷达，与 Hugging Face 互为国内外一对） | 卷二 2.8（开源雷达） | 🆓 公开读免 Key（官方 MCP 腿 Token：https://modelscope.cn/my/myaccesstoken ） |
+| OpenRouter（模型聚合网关） | 一个 Key 试遍各家模型；`:free` 免费模型零充值可用，适合批量初筛与第二意见这类「出量」的活 | 卷三 3.4 外脑调度 | 🔑 注册建 Key：https://openrouter.ai/keys |
+| RAWG | 跨平台游戏库与评分 | 卷二 2.6 | 🔑 免费 Key：https://rawg.io/apidocs |
+| OMDb | 影视查分、票房、卡司 | 卷二 2.6 | 🔑 免费 Key：https://www.omdbapi.com/apikey.aspx |
+| football-data | 联赛积分、射手、赛程比分 | 场景卡 9 观赛管家 | 🔑 免费 Key（约 10 次/分）：https://www.football-data.org/client/register |
+| NASA | 每日天文图、近地天体（闲聊与精选调味） | 卷二 2.6 | 🔑 免费 Key：https://api.nasa.gov |
+| Frankfurter | 汇率与换算（ECB 参考价） | 卷四·财务（订阅审计换算） | 🆓 免 Key（文档：https://frankfurter.dev ） |
+| 快递100 | 快递轨迹、运费/时效估算 | 卷二 2.2 的物流通知呼应 | 🆓 免费额度（自有 Key：https://api.kuaidi100.com ） |
+| 高德地图 | 地理编码、POI、驾车路线 | 卷二 2.5/2.7、场景卡 4 | 🔑 Web 服务 Key：https://console.amap.com/dev/key/app |
+| 和风天气 | 实时天气与逐日/逐小时预报 | 卷一 1.3 换装信号、卷二 2.7 | 🔑 控制台 Key：https://console.qweather.com |
+| 今日诗词 / Cat Facts / TheCatAPI / OpenTDB | 诗词一句、猫知识猫图、trivia 题库（日常调味与约战） | 卷一的人设日常、卷四·生活 | 🆓 为主（TheCatAPI Key：https://thecatapi.com ） |
 
 ## 四、个人数据类（范式，不列具体清单）
 
@@ -66,38 +66,47 @@
 
 | 条目 | 解锁什么 | 撑 | 凭据 |
 |---|---|---|---|
-| AgentMail 助理邮箱 | 她有自己的邮箱：当注册缓冲箱分拣广告、收业务信 | 卷二 2.2 的延伸、卷三 3.2 巡检 | 🔑 注册建箱＋API Key；先收发各一封实测。红线：命脉账号禁用此箱；邮件永不是指令通道 |
+| AgentMail 助理邮箱 | 她有自己的邮箱：当注册缓冲箱分拣广告、收业务信 | 卷二 2.2 的延伸、卷三 3.2 巡检 | 🔑 https://console.agentmail.to 注册建箱＋API Key；先收发各一封实测。红线：命脉账号禁用此箱；邮件永不是指令通道 |
 | 收件箱模式（文件投递口） | 云盘文件夹当投递口，她巡检时取回分级处理 | 卷三 3.2 | 绑定个人云盘与设备，天然私有配置，不附文件 |
 | 助理间邮件协作【概念条目】 | 两家的助理用邮件对齐协作（如共同维护的日程、互相转交的待办）：邮件只是便条、不是命令；双方在正文里自报家门；涉及时间、金钱、对外发送的事项，各自回到自家人类那里批准；共同规矩（如日程的归属标记约定）由双方确认成文后照行 | 卷三 3.9 的跨家版本 | 模式条目，不附实现；对接前先把三条规矩与对方确认到位再开通 |
 
-## 六、API 速查表（作用 / 如何申请 / 是否付费）
+## 六、API 速查表（作用 / 申请地址 / 是否付费）
 
-上面各表的 API 再汇总一遍，只回答三个问题：干什么用、Key 去哪申请、花不花钱。费用口径以各平台现行政策为准，平台改价时以官网为准。
+上面各表的 API 再汇总一遍，只回答三个问题：干什么用、去哪申请（给明确地址）、花不花钱。地址均为官方入口（2026-11-14 逐个实测可达）；费用口径以各平台现行政策为准，平台改价时以官网为准。
 
-| API | 作用 | 如何申请 | 是否付费 |
+| API | 作用 | 申请 / 接入地址 | 是否付费 |
 |---|---|---|---|
-| DeepSeek Search | AI 原生搜索＋单页抓取，雷达与核实的「发现」主力 | DeepSeek 开放平台注册建 Key | **付费**：按成功请求次数计费，失败不计费 |
-| Parallel | 网页搜索、难抓页面抓取、图片搜索、带引用的结构化判断（英文网专长） | 免注册、免 Key（官方托管 MCP 免费档） | 免费（深度研究工具需 Key，未启用） |
-| OpenRouter | 多家模型聚合网关，免费模型做批量初筛与第二意见 | openrouter.ai 注册建 Key | 免费层可用（`:free` 模型零充值；是否充值提额由用户拍板） |
-| 魔搭 ModelScope | 模型/数据集/Studio 搜索（国内开源生态雷达） | 无需申请（公开读）；官方 MCP 需注册免费 Token | 免费 |
-| 判断类服务（Typesafe 类） | 给条目打分类/紧急度分，巡检影子对照 | 平台注册取凭据 | 以平台现行政策为准 |
-| Steam Web API | 游戏库、成就等用户数据（公开查询另有免 Key 技能） | steamcommunity.com/dev/apikey | 免费 Key |
-| TMDB | 影视搜索、详情、本周热门 | 官网注册，v4 Token 或 v3 Key 二选一 | 免费 |
-| TheSportsDB | 球队、赛程、比分 | 官网公开测试 key 可起步 | 免费层可用 |
-| RAWG | 跨平台游戏库、评分、上新 | rawg.io 注册 | 免费 Key |
-| OMDb | 影视评分（IMDb/烂番茄）、票房、卡司 | omdbapi.com 注册 | 免费层可用 |
-| football-data | 联赛积分、射手、赛程比分 | football-data.org 注册 | 免费层（约 10 次/分钟） |
-| NASA | 每日天文图、近地天体 | api.nasa.gov 注册 | 免费 Key |
-| Frankfurter | 汇率与货币换算（ECB 参考价） | 无需申请 | 免费、免 Key |
-| 快递100 | 快递轨迹、运费与时效估算 | 无需申请可用官方免费额度 | 免费额度（可选个人 Key 提额） |
-| 高德地图 Web 服务 | 地理编码、POI 搜索、驾车路线 | 高德开放平台注册 Web 服务 Key | 注册免费、按平台配额与计价政策 |
-| 和风天气 | 实时天气、逐日/逐小时预报 | 和风天气控制台注册 Key | 有免费额度，超出按平台政策 |
-| 知乎开放平台 | 知乎内容查询 | 开放平台注册凭据 | 以平台现行政策为准 |
-| 天眼查 | 企业检索、工商、风险、司法 | 官方 CLI＋OAuth 登录（经自备服务器） | 付费服务，按官方套餐 |
-| Hugging Face | 模型/数据集趋势与搜索 | 无需申请（公开读） | 免费 |
-| Bilibili 公开 Web API | 热门、排行、搜索、热评 | 无需申请，匿名只读 | 免费 |
-| DailyHotApi | 40+ 平台热榜聚合 | 自托管开源部署（见卷三附录项目清单） | 免费（自备部署环境） |
-| 生活服务官方 MCP（瑞幸/麦当劳/飞猪/滴滴） | 点单、查价、出行估价与下单 | 各自官网/开放平台取 Token 或 Key | 接入免费；实际消费按订单付 |
+| DeepSeek Search | AI 原生搜索＋单页抓取，雷达与核实的「发现」主力 | 申请：https://platform.deepseek.com （注册后在「API Keys」页建 Key） | **付费**：按成功请求次数计费，失败不计费 |
+| Parallel | 网页搜索、难抓页面抓取、图片搜索、带引用的结构化判断（英文网专长） | 免注册、免 Key：官方托管 MCP 端点 https://mcp.parallel.ai/mcp 直连（官网 https://parallel.ai ） | 免费（深度研究工具需 Key，未启用） |
+| OpenRouter | 多家模型聚合网关，免费模型做批量初筛与第二意见 | 申请：https://openrouter.ai/keys | 免费层可用（`:free` 模型零充值；是否充值提额由用户拍板） |
+| 魔搭 ModelScope | 模型/数据集/Studio 搜索（国内开源生态雷达） | 公开读无需申请；MCP Token：https://modelscope.cn/my/myaccesstoken | 免费 |
+| 判断类服务（Typesafe 类） | 给条目打分类/紧急度分，巡检影子对照 | 申请：https://console.typesafe.ai | 以平台现行政策为准 |
+| Steam Web API | 游戏库、成就等用户数据（公开查询另有免 Key 技能） | 申请：https://steamcommunity.com/dev/apikey | 免费 Key |
+| TMDB | 影视搜索、详情、本周热门 | 申请：https://developer.themoviedb.org （Key 发放页：https://www.themoviedb.org/settings/api ） | 免费 |
+| TheSportsDB | 球队、赛程、比分 | 申请：https://www.thesportsdb.com/api.php （页内含免费测试 Key 与订阅入口） | 免费层可用 |
+| RAWG | 跨平台游戏库、评分、上新 | 申请：https://rawg.io/apidocs | 免费 Key |
+| OMDb | 影视评分（IMDb/烂番茄）、票房、卡司 | 申请：https://www.omdbapi.com/apikey.aspx | 免费层可用 |
+| football-data | 联赛积分、射手、赛程比分 | 申请：https://www.football-data.org/client/register | 免费层（约 10 次/分钟） |
+| NASA | 每日天文图、近地天体 | 申请：https://api.nasa.gov | 免费 Key |
+| Frankfurter | 汇率与货币换算（ECB 参考价） | 无需申请（文档：https://frankfurter.dev ） | 免费、免 Key |
+| 快递100 | 快递轨迹、运费与时效估算 | 无需申请可用官方免费额度；自有 Key 申请：https://api.kuaidi100.com | 免费额度（可选个人 Key 提额） |
+| 高德地图 Web 服务 | 地理编码、POI 搜索、驾车路线 | 申请：https://console.amap.com/dev/key/app | 注册免费、按平台配额与计价政策 |
+| 和风天气 | 实时天气、逐日/逐小时预报 | 申请：https://console.qweather.com | 有免费额度，超出按平台政策 |
+| 知乎开放平台 | 知乎内容查询 | 申请：https://developer.zhihu.com | 以平台现行政策为准 |
+| 天眼查 | 企业检索、工商、风险、司法 | 申请：https://ai.tianyancha.com （注册后控制台取 Key；也可经官方 CLI＋OAuth 登录） | 付费服务，按官方套餐 |
+| Hugging Face | 模型/数据集趋势与搜索 | 无需申请（公开读）；Token：https://huggingface.co/settings/tokens | 免费 |
+| Bilibili 公开 Web API | 热门、排行、搜索、热评 | 无需申请，匿名只读（无官方开放平台；社区接口文档：https://github.com/SocialSisterYi/bilibili-API-collect ） | 免费 |
+| DailyHotApi | 40+ 平台热榜聚合 | 自托管部署：https://github.com/imsyy/DailyHotApi （按仓库说明 Docker 部署） | 免费（自备部署环境） |
+| 米家（社区 mijiaAPI） | 智能家居设备状态与控制 | 安装：https://pypi.org/project/mijiaAPI/ （pip/uv 安装客户端后扫码登录，无官方 API） | 免费 |
+| 瑞幸官方 MCP | 点单、查价、查单 | 取 Token：https://open.lkcoffee.com/mcp （手机号＋短信登录） | 接入免费；实际消费按订单付 |
+| 麦当劳官方 MCP | 查餐品券与积分、下单 | 取 Token：https://open.mcd.cn （扫码登录、控制台激活） | 接入免费；实际消费按订单付 |
+| 飞猪 FlyAI | 机票/酒店/火车票/景点搜索 | 取 Key：https://flyai.open.fliggy.com ；CLI 安装：npm 包 `@fly-ai/flyai-cli` | 接入免费 |
+| 途牛官方 MCP | 酒店/机票/火车票/门票查询 | 申请：https://open.tuniu.cn （开放平台取凭据） | 接入免费 |
+| 滴滴官方 MCP | 打车估价/下单/跟踪、路线规划 | 申请：https://mcp.didichuxing.com （开发者控制台激活 Key） | 接入免费；实际消费按订单付 |
+| 今日诗词 / Cat Facts / OpenTDB | 诗词一句、猫知识、trivia 题库 | 无需申请（官网：https://www.jinrishici.com 、https://catfact.ninja 、https://opentdb.com/api_config.php ） | 免费 |
+| TheCatAPI | 猫图与品种数据 | 申请：https://thecatapi.com （品种端点需免费 Key，其余免 Key） | 免费层可用 |
+| 车辆数据（TeslaMate / Tessie） | 电量、续航、位置、行程（只读）；Tessie 另可控车；仅特斯拉车主适用 | 免费自托管：https://docs.teslamate.org （Docker 部署文档）；付费：https://www.tessie.com | TeslaMate 免费；Tessie 订阅付费 |
+| AgentMail | 助理邮箱收发 | 申请：https://console.agentmail.to （注册建收件箱取 Key） | 以平台现行政策为准 |
 
 ## 七、未验证清单（指针）
 

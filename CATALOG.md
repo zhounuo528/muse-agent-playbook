@@ -29,7 +29,7 @@
 **米家（custom.mijia）💻📱【配方】**
 - 用途：查智能家居设备与在线状态、经确认控制设备。
 - 接入步骤：
-  1. 小米没有个人官方 API，走社区 `mijiaAPI` 客户端：在一台常开的机器上按其开源说明安装；
+  1. 小米没有个人官方 API，走社区 `mijiaAPI` 客户端：在一台常开的机器上安装（PyPI 包页：https://pypi.org/project/mijiaAPI/ ，`uv tool install mijiaAPI` 或 pip 安装）；
   2. 用小米账号扫码登录一次，凭据由客户端存放在它自己的本地配置里（文件权限收紧到仅本人可读）；
   3. 把客户端的查询命令包成连接器助手，工具清单以客户端实际能列出的为准。
 - 凭据：扫码登录态，约 30 天有效，失效重新扫一次。
@@ -39,7 +39,7 @@
 **瑞幸咖啡（custom.luckin）🔑【配方】**
 - 用途：查门店/商品、预览订单、经确认下单、查单。
 - 接入步骤：
-  1. 打开 `open.lkcoffee.com/mcp`，右上角用手机号＋短信验证码登录；
+  1. 打开 https://open.lkcoffee.com/mcp ，右上角用手机号＋短信验证码登录；
   2. 复制页面上给出的 MCP Token，经安全录入交给 Muse 存入保险库；
   3. 连接器以官方远程 MCP（Streamable HTTP，Bearer Token）方式接入，先列工具清单核对再用。
 - 凭据有效期：约一个月，过期重取。
@@ -49,30 +49,30 @@
 **麦当劳（custom.mcd）📱🔑【配方】**
 - 用途：查门店餐品、领券查券、积分账户与商城、查单、经确认下单。
 - 接入步骤：
-  1. 打开 `open.mcd.cn` 扫码登录；
+  1. 打开 https://open.mcd.cn 扫码登录；
   2. 进控制台完成「激活」并同意协议，复制 MCP Token；
-  3. Token 经安全录入存保险库，连接器以官方 MCP（`mcp.mcd.cn`，Bearer）接入。
+  3. Token 经安全录入存保险库，连接器以官方 MCP（https://mcp.mcd.cn ，Bearer）接入。
 - 验证：查「我的账户」，返回真实积分。
 - 常见坑：限流约 600 次/分，别批量刷；计价只是报价；**下单只到「待支付」，最后付款一步可能要在官方 App 里完成——下单前先把这一步告诉用户**，免得用户到付款页才发现要多装一个 App；积分兑换/抽奖（花积分）、新增地址等写操作一律先确认。
 
 **飞猪 Fliggy（custom.fliggy）🔑【配方】**
 - 用途：搜机票/酒店/火车票/景点/万豪套餐（仅搜索，下单跳转飞猪完成）。
 - 接入步骤：
-  1. 安装官方 CLI（`@fly-ai/flyai-cli`）；
-  2. 打开 `flyai.open.fliggy.com` 控制台领取 API Key，经安全录入交付；
+  1. 安装官方 CLI：`npm install -g @fly-ai/flyai-cli`；
+  2. 打开 https://flyai.open.fliggy.com 控制台领取 API Key，经安全录入交付；
   3. 无 Key 模式能搜但价格打码，先用它验证链路，再配 Key 出真实价格。
 - 验证：同一查询，无 Key 时价格是区间打码、配 Key 后是真实数字。
 - 常见坑：该服务的鉴权要求以 Key 本身参与请求签名，与通用凭据替身机制不兼容。这类情形的处理原则见 [01 号模块](modules/01-connector-onboarding.md) 第 3 步（讲清利害、经用户明确拍板、记录撤销路径）；公开版不在此展开实现细节。
 
 **途牛（custom.legacy-tuniu）🔑【配方】**
 - 用途：酒店/机票/火车票/门票查询（只查不订），与飞猪互为替补：飞猪主查、途牛核价与故障顶上；火车票权威数据另走 12306 技能（B 节，【随仓附带】）。
-- 接入步骤：按官方 MCP 指引取凭据存保险库 → 接入时强制只读工具白名单 → 文档里与飞猪互相写明替补分工。
+- 接入步骤：在途牛开放平台 https://open.tuniu.cn 取 MCP 凭据存保险库（端点在 openapi.tuniu.cn/hybrid/mcp/ 下按酒店/机票/火车票/门票分）→ 接入时强制只读工具白名单 → 文档里与飞猪互相写明替补分工。
 - 验证：任意城市酒店搜索返回真实列表与「¥起」价。
 - 常见坑：只查不订是口径不是限制——它的工具集里出现预订类工具也不要启用。
 
 **滴滴出行（custom.didi-mcp）🔑【配方】**
 - 用途：打车估价/下单/订单跟踪、司机位置、POI 搜索、路线规划。
-- 接入步骤：按滴滴官方 MCP Server 开放平台指引注册并获取凭据存保险库 → 列工具清单 → 先跑一次只读估价验证。
+- 接入步骤：在滴滴 MCP 开放平台 https://mcp.didichuxing.com 注册、于开发者控制台激活 Key 并存保险库 → 列工具清单 → 先跑一次只读估价验证。
 - 验证：一次估价查询返回真实价格区间。
 - 常见坑：下单先列明细（车型、价格、起终点）等用户确认；订单跟踪是轮询不是推送，别高频刷。
 
@@ -85,24 +85,24 @@
 
 **DeepSeek Search（custom.deepseek-search）🔑**
 - 用途：AI 原生网页搜索（带权威度与重排分）＋单页抓取转 Markdown，是「发现」环节的主力。
-- 取 Key 步骤：DeepSeek 开放平台注册并创建 Key 存保险库。按成功请求次数计费，失败不计费。
+- 取 Key 步骤：在 DeepSeek 开放平台 https://platform.deepseek.com 注册并创建 Key 存保险库。按成功请求次数计费，失败不计费。
 - 验证：一次真实关键词搜索返回带来源的结果。
 
 **Parallel（custom.parallel）🆓【配方】**
 - 用途：托管 MCP 搜索套件——网页搜索、难抓页面（PDF、JS 重页）批量抓取、图片搜索、带引用出处的结构化判断打分（是非/多选/打分三类）；英文网是其专长，国内发现仍走 DeepSeek Search。
-- 接入步骤：官方托管 MCP 端点直连即可，免费档免注册、免 Key，超限只限流不扣费；深度研究工具（web_research）需 Key，未启用，不许当已有能力引用。
+- 接入步骤：官方托管 MCP 端点 https://mcp.parallel.ai/mcp 直连即可（官网 https://parallel.ai ），免费档免注册、免 Key，超限只限流不扣费；深度研究工具（web_research）需 Key，未启用，不许当已有能力引用。
 - 验证：一次英文搜索返回带来源的真实结果；一次判断打分返回带引用的结论。
 - 纪律：查询发往境外服务商，只查公开、通用信息，不发敏感关键词；免费档限速未公开，批量查询合并进单次调用。
 
 **Typesafe / Jev（custom.typesafe）🔑**
 - 用途：决策打分（分类/紧急度/是否需用户拍板），用于巡检的影子分级对照。
-- 接入步骤：按其平台指引取凭据存保险库 → 先只跑影子模式：把脱敏摘要交给它打分，与助理自己的分级逐条对账，记结构化对账记录。
+- 接入步骤：在其控制台 https://console.typesafe.ai 取凭据存保险库 → 先只跑影子模式：把脱敏摘要交给它打分，与助理自己的分级逐条对账，记结构化对账记录。
 - 纪律：只做影子或「高置信忽略直接归档」一条窄通道（且要等影子期数据证明误报率够低、经用户拍板才转正）；安全类永远人工打开正文核实；是否打扰用户永不由打分单独决定。
 
 
 **OpenRouter（custom.openrouter）🆓🔑【配方】**
 - 用途：多家模型聚合网关，一个 Key 试遍各家模型；带 `:free` 后缀的免费模型零充值可用，适合批量处理与第二意见这类「出量」的活。
-- 取 Key 步骤：openrouter.ai 注册并创建 Key 存保险库；免费模型每日 50 次，累计充值满 $10 后免费档日限额升至 1000 次，是否充值由用户拍板。
+- 取 Key 步骤：在 https://openrouter.ai/keys 注册并创建 Key 存保险库；免费模型每日 50 次，累计充值满 $10 后免费档日限额升至 1000 次，是否充值由用户拍板。
 - 验证：用一个免费模型真实跑通一次对话。
 - 纪律：免费层可能将请求数据用于训练——只喂公开内容，敏感材料走付费通道；免费层失败或限流时回退自干，不让任何交付依赖它；外援出量、Muse 终审。
 
@@ -110,23 +110,23 @@
 
 | 连接器 | 用途 | 怎么连 / 用户取 Key | 验证 |
 |---|---|---|---|
-| Steam（custom.steam） | 带 Key 的用户数据：游戏库、最近游玩、成就（公开查询另有免 Key 技能，见 B 节 local-steam） | 🔑 `steamcommunity.com/dev/apikey` 注册免费 Key | 读一次用户游戏库返回真实条目 |
-| 知乎（custom.zhihu） | 知乎开放平台查询 | 🔑 按开放平台指引注册凭据 | 一次内容查询 |
-| 天眼查（custom.tianyancha） | 企业检索、工商、风险、司法、股权 | 💻 经用户自备云服务器上的官方 CLI＋OAuth 登录 | 搜一家公司返回主体信息 |
-| Bilibili（custom.bilibili） | 热门/排行/搜索/视频详情/热评 | 🆓 公开 Web API 匿名只读，不用账号 Cookie | 拉一次热门榜 |
-| DailyHot（custom.dailyhot） | 40+ 平台热榜聚合（微博/知乎/B站/抖音等） | 🆓 自托管开源服务（imsyy/DailyHotApi），本地部署无 Key | 拉一次微博热搜 |
-| Hugging Face（custom.huggingface） | 热门/搜索模型与数据集 | 🆓 公开读免 Key | 拉一次趋势模型 |
-| 魔搭 ModelScope（custom.modelscope） | 模型/数据集/Studio 搜索（国内开源生态雷达，与 Hugging Face 互为国内外一对） | 🆓 公开 API 读免 Key；官方 MCP 腿 🔑 魔搭注册免费 Token 存保险库 | 搜一个模型返回真实条目 |
-| RAWG（custom.rawg） | 跨平台游戏库搜索、详情、评分 | 🔑 rawg.io 注册免费 Key | 搜一款游戏 |
-| OMDb（custom.omdb） | 影视查分（IMDb/烂番茄）、票房、卡司 | 🔑 omdbapi.com 注册免费 Key | 查一部电影 |
-| football-data（custom.football-data） | 联赛积分、射手、赛程比分 | 🔑 football-data.org 注册免费 Key（免费层约 10 次/分） | 拉一次积分榜 |
-| NASA（custom.nasa） | 每日天文图、近地天体 | 🔑 api.nasa.gov 免费注册 Key | 拉一次当日天文图 |
-| Frankfurter（custom.frankfurter） | 汇率（ECB 参考价）与换算 | 🆓 免 Key | 查一次 USD→CNY |
-| 快递100（custom.kuaidi100） | 快递轨迹（自动识别承运商）、运费/时效估算 | 🆓 官方免费额度免 Key（可选个人 Key 提额） | 查一次真实单号的轨迹 |
-| 高德地图（custom.legacy-amap） | 地理编码、POI 搜索、驾车路线 | 🔑 高德开放平台注册 Web 服务 Key | 一次 POI 搜索 |
-| 和风天气（custom.legacy-qweather） | 实时天气、逐日/逐小时预报 | 🔑 和风天气控制台注册 Key | 查一次实时天气 |
-| 今日诗词（custom.jinrishici） | 随机古典诗词一句 | 🆓 免 Key | 拉一句 |
-| Cat Facts / TheCatAPI / OpenTDB | 猫知识、猫图、trivia 题库（闲聊调味） | 🆓 免 Key 为主（TheCatAPI 品种端点需免费 Key） | 各拉一次 |
+| Steam（custom.steam） | 带 Key 的用户数据：游戏库、最近游玩、成就（公开查询另有免 Key 技能，见 B 节 local-steam） | 🔑 https://steamcommunity.com/dev/apikey 注册免费 Key | 读一次用户游戏库返回真实条目 |
+| 知乎（custom.zhihu） | 知乎开放平台查询 | 🔑 https://developer.zhihu.com 注册凭据 | 一次内容查询 |
+| 天眼查（custom.tianyancha） | 企业检索、工商、风险、司法、股权 | 💻 申请：https://ai.tianyancha.com ；经用户自备云服务器上的官方 CLI＋OAuth 登录 | 搜一家公司返回主体信息 |
+| Bilibili（custom.bilibili） | 热门/排行/搜索/视频详情/热评 | 🆓 公开 Web API 匿名只读，不用账号 Cookie（无官方开放平台；社区接口文档 https://github.com/SocialSisterYi/bilibili-API-collect ） | 拉一次热门榜 |
+| DailyHot（custom.dailyhot） | 40+ 平台热榜聚合（微博/知乎/B站/抖音等） | 🆓 自托管开源服务 https://github.com/imsyy/DailyHotApi ，本地部署无 Key | 拉一次微博热搜 |
+| Hugging Face（custom.huggingface） | 热门/搜索模型与数据集 | 🆓 公开读免 Key（Token https://huggingface.co/settings/tokens ） | 拉一次趋势模型 |
+| 魔搭 ModelScope（custom.modelscope） | 模型/数据集/Studio 搜索（国内开源生态雷达，与 Hugging Face 互为国内外一对） | 🆓 公开 API 读免 Key；官方 MCP 腿 🔑 https://modelscope.cn/my/myaccesstoken 取免费 Token 存保险库 | 搜一个模型返回真实条目 |
+| RAWG（custom.rawg） | 跨平台游戏库搜索、详情、评分 | 🔑 https://rawg.io/apidocs 注册免费 Key | 搜一款游戏 |
+| OMDb（custom.omdb） | 影视查分（IMDb/烂番茄）、票房、卡司 | 🔑 https://www.omdbapi.com/apikey.aspx 注册免费 Key | 查一部电影 |
+| football-data（custom.football-data） | 联赛积分、射手、赛程比分 | 🔑 https://www.football-data.org/client/register 注册免费 Key（免费层约 10 次/分） | 拉一次积分榜 |
+| NASA（custom.nasa） | 每日天文图、近地天体 | 🔑 https://api.nasa.gov 免费注册 Key | 拉一次当日天文图 |
+| Frankfurter（custom.frankfurter） | 汇率（ECB 参考价）与换算 | 🆓 免 Key（文档 https://frankfurter.dev ） | 查一次 USD→CNY |
+| 快递100（custom.kuaidi100） | 快递轨迹（自动识别承运商）、运费/时效估算 | 🆓 官方免费额度免 Key（个人 Key 提额：https://api.kuaidi100.com 注册） | 查一次真实单号的轨迹 |
+| 高德地图（custom.legacy-amap） | 地理编码、POI 搜索、驾车路线 | 🔑 https://console.amap.com/dev/key/app 注册 Web 服务 Key | 一次 POI 搜索 |
+| 和风天气（custom.legacy-qweather） | 实时天气、逐日/逐小时预报 | 🔑 https://console.qweather.com 注册 Key | 查一次实时天气 |
+| 今日诗词（custom.jinrishici） | 随机古典诗词一句 | 🆓 免 Key（官网 https://www.jinrishici.com ） | 拉一句 |
+| Cat Facts / TheCatAPI / OpenTDB | 猫知识、猫图、trivia 题库（闲聊调味） | 🆓 免 Key 为主（TheCatAPI 品种端点需免费 Key：https://thecatapi.com ） | 各拉一次 |
 
 ### A4. 个人数据类（范式，不列具体清单）
 
@@ -146,8 +146,8 @@
 **车辆数据类（自托管车辆遥测）**
 - 适用声明：本条只适用于特斯拉车主（数据源是特斯拉的车辆遥测）。
 - 范式：车主自建的车辆遥测记录系统作只读数据源，电量、续航、位置、行程直查数据库；只读，绝不唤醒车辆、绝不下发任何车辆指令，看护类场景（低电提醒、出行预检）建立在「不打扰车」的前提上；平台没记录的字段不许推测冒充，数据停在何时就报何时，旧数据不冒充实时。
-- 免费路线：TeslaMate（开源）自托管——常开机器（自有服务器、NAS 或家用小主机）按官方文档 Docker Compose 部署，再以特斯拉账号授权令牌接入，数据自动落进自己的数据库；软件免费，唯一成本是那台机器，已有服务器就是零增量；它只记录、不控车。
-- 付费可选项：Tessie——第三方车辆数据订阅服务，走特斯拉官方车队接口，除只读数据外还能下发控车指令（解锁、开空调、鸣笛这类）；订阅制付费，价格以官网现行政策为准。只做只读看护，免费的自托管路线已经够用，想要控车再按自己的需求考虑订阅。
+- 免费路线：TeslaMate（开源，https://github.com/teslamate-org/teslamate ）自托管——常开机器（自有服务器、NAS 或家用小主机）按官方文档 https://docs.teslamate.org/docs/installation/docker 用 Docker Compose 部署，再以特斯拉账号授权令牌接入，数据自动落进自己的数据库；软件免费，唯一成本是那台机器，已有服务器就是零增量；它只记录、不控车。
+- 付费可选项：Tessie（https://www.tessie.com ）——第三方车辆数据订阅服务，走特斯拉官方车队接口，除只读数据外还能下发控车指令（解锁、开空调、鸣笛这类）；订阅制付费，价格以官网现行政策为准。只做只读看护，免费的自托管路线已经够用，想要控车再按自己的需求考虑订阅。
 
 ### A5. 未验证清单（指针）
 
@@ -160,7 +160,7 @@
 **AgentMail 助理邮箱（custom.agentmail）🔑【配方】**
 - 用途：助理自己的邮箱——注册缓冲箱（广告与推销信由助理分拣）、助理业务信箱。
 - 接入步骤：
-  1. 在 AgentMail 注册并创建收件箱；有自有域名的，把域名接入并完成验证（按其控制台指引配 DNS）；
+  1. 在 AgentMail 控制台 https://console.agentmail.to 注册并创建收件箱；有自有域名的，把域名接入并完成验证（按其控制台指引配 DNS）；
   2. API Key 经安全录入存保险库，连接器以其 API 收发；
   3. 先做一次收发实测（发一封、再收一封）验证全链路。
 - 验证：收发各一封真实邮件。
