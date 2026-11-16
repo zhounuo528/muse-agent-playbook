@@ -47,7 +47,7 @@
 | 有道云笔记 | 官方 MCP / Skill：账号授权 | 🟢 |
 | 夸克网盘 | 官方 Skill：夸克账号授权 | 🟢 |
 | 腾讯微云 | 官方 Skill：腾讯账号授权 | 🟢 |
-| 百度网盘 | 官方 MCP（百度网盘开放平台）：建应用＋OAuth 授权，部分能力有审核与配额 | 🟡 |
+| 百度网盘 | 官方 MCP（百度网盘开放平台）：建应用＋OAuth 授权，部分能力有审核与配额；另有个人应用 Skill 路线（社区技能 venilanet/baidu-netdisk-skill）：在开放平台 https://pan.baidu.com/union 完成个人开发者认证、自建应用（scope 取 basic,netdisk）后 OAuth 换 access_token，只读为主——列目录、关键词搜索、取临时下载链接、读文档内容，写入仅限应用沙箱目录 `/apps/<应用名>/`；注意 access_token 有效期 30 天且无自动刷新，到期需人工重走一遍授权，接入前先评估这份维护成本 | 🟡 |
 | 微信读书 | 见 CATALOG 的 A4 范式（办公协作类；官方另有 Skill 版，与网关版二选一） | — |
 
 **搜索、内容和企业数据**
