@@ -28,6 +28,8 @@ description: 个人助理操作总契约：接入新服务、心跳巡检、记�
 | 月度账本结账 | `modules/06-monthly-closing.md` |
 | 拿不准能不能自己干 | `modules/07-approvals-and-privacy.md` |
 | 结论可信度：能力核实、记忆清理、交付验收、信息分级、自动化演习 | `modules/08-verification-and-trust.md` |
+| 找实测小招/免费工具（读推文、抓公众号、查汇率赛程、装包避坑） | `modules/09-toolbox.md` |
+| 把两个数据源打通（日程、健康、车辆、邮件、平台记录之间的联动） | `modules/10-linkage-recipes.md` |
 
 ## 完成纪律（销项三件事）
 

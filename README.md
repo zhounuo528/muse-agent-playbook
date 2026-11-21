@@ -56,6 +56,8 @@
 | 06 | [月度结账](modules/06-monthly-closing.md) | 账本月结对账的固定口径 |
 | 07 | [审批与隐私边界](modules/07-approvals-and-privacy.md) | 什么能自己干，什么必须先问 |
 | 08 | [核实与可信度](modules/08-verification-and-trust.md) | 能力先实测、记忆批准制、交付凭据、结论分级、受控演习 |
+| 09 | [工具箱（实测小抄）](modules/09-toolbox.md) | 一条条实测好用的小招与免费工具：免登录读推文、公众号全文抓取、免费数据 API、装包避坑 |
+| 10 | [联动菜谱](modules/10-linkage-recipes.md) | 数据打通的配方：日程→品鉴库、睡眠×日程→训练评级、票务→日历、费用邮件→订阅审计、双 AI 打通 |
 
 模板在 [templates/](templates/) 目录：核心记忆、巡检清单、未闭环账本、连接器文档各一份空表。
 
